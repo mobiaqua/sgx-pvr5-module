@@ -200,6 +200,8 @@ endif
 
 WINDOW_SYSTEM :=
 
+PVRSRV_MODNAME := omapdrm_pvr_$(TARGET_PRODUCT)
+
 include ../common/xorg_test.mk
 
 ifneq ($(strip $(KERNELDIR)),)
