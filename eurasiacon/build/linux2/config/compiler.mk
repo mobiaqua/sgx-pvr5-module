@@ -69,7 +69,7 @@ define calculate-compiler-preferred-target
    $(1)_compiler_preferred_target := aarch64-linux-gnu
   endif
   ifneq ($$(filter arm-%-gnueabi armv7a-cros-linux-gnueabi armv7hl-redhat-linux-gnueabi,$$($(1)_compiler_preferred_target)),)
-   $(1)_compiler_preferred_target := arm-linux-gnueabi
+   $(1)_compiler_preferred_target := arm-linux-gnueabihf
   endif
   ifneq ($$(filter arm-%-gnueabihf,$$($(1)_compiler_preferred_target)),)
    $(1)_compiler_preferred_target := arm-linux-gnueabihf
