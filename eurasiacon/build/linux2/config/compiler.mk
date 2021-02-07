@@ -125,7 +125,7 @@ endif
 
 # Workaround our lack of support for non-Linux HOST_CCs
 ifneq ($(HOST_CC_IS_LINUX),1)
- $(warning $$(HOST_CC) is non-Linux. Trying to work around.)
+# $(warning $$(HOST_CC) is non-Linux. Trying to work around.)
  override HOST_CC := $(HOST_CC) -D__linux__
  $(eval $(call BothConfigMake,HOST_CC,$(HOST_CC)))
 endif
