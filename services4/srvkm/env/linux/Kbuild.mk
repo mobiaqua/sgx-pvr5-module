@@ -38,7 +38,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### ###########################################################################
 
-pvrsrvkm-y += \
+$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/env/linux/osfunc.o \
 	services4/srvkm/env/linux/mutils.o \
 	services4/srvkm/env/linux/mmap.o \
@@ -79,28 +79,28 @@ pvrsrvkm-y += \
 endif
 
 ifeq ($(SUPPORT_ION),1)
-pvrsrvkm-y += \
+$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/env/linux/ion.o
 ifeq ($(LMA),1)
-pvrsrvkm-y += \
+$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/env/linux/lma_heap_ion.o 
 endif
 endif
 
 ifeq ($(SUPPORT_DMABUF),1)
-pvrsrvkm-y += \
+$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/env/linux/dmabuf.o \
 	services4/srvkm/env/linux/pvr_linux_fence.o
 endif
 
 ifeq ($(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC),1)
-pvrsrvkm-y += \
+$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/env/linux/pvr_sync.o \
 	services4/srvkm/env/linux/pvr_sync_common.o
 endif
 
 ifeq ($(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE),1)
-pvrsrvkm-y += \
+p$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/env/linux/pvr_sync_common.o \
 	services4/srvkm/env/linux/pvr_fence.o \
 	services4/srvkm/env/linux/dma_fence_sync_native_server.o \
@@ -109,12 +109,12 @@ pvrsrvkm-y += \
 endif
 
 ifeq ($(TTRACE),1)
-pvrsrvkm-y += \
+p$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/common/ttrace.o
 endif
 
 ifeq ($(SUPPORT_PVRSRV_ANDROID_SYSTRACE),1)
-pvrsrvkm-y += \
+p$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/env/linux/systrace.o
 endif
 
@@ -155,7 +155,7 @@ endif
 
 # SUPPORT_SGX==1 only
 
-pvrsrvkm-y += \
+$(PVRSRV_MODNAME)-y += \
 	services4/srvkm/bridged/sgx/bridged_sgx_bridge.o \
 	services4/srvkm/devices/sgx/sgxinit.o \
 	services4/srvkm/devices/sgx/sgxpower.o \
@@ -180,7 +180,7 @@ endif
 
 ifeq ($(SUPPORT_DRI_DRM),1)
 
-pvrsrvkm-y += \
+$(PVRSRV_MODNAME)-y += \
  services4/srvkm/env/linux/pvr_drm.o
 
 ccflags-y += \
