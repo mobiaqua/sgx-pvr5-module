@@ -99,10 +99,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #if defined(SUPPORT_DRI_DRM) && (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0))
-static inline int drm_mmap(struct file *filp, struct vm_area_struct *vma)
-{
-	return drm_legacy_mmap(filp, vma);
-}
+//static inline int drm_mmap(struct file *filp, struct vm_area_struct *vma)
+//{
+//	return drm_legacy_mmap(filp, vma);
+//}
 #endif
 
 /* WARNING:
@@ -1045,7 +1045,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 
 #if !defined(SUPPORT_DRI_DRM_EXT)
 		/* Pass unknown requests onto the DRM module */
-		return drm_mmap(pFile, ps_vma);
+		return -ENOENT;//drm_mmap(pFile, ps_vma);
 #else
         /*
          * Indicate to caller that the request is not for us.
