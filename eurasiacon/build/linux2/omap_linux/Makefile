@@ -198,6 +198,8 @@ else
 OPK_DEFAULT := libpvrPVR2D_FLIPWSEGL.so
 endif
 
+WINDOW_SYSTEM :=
+
 include ../common/xorg_test.mk
 
 ifneq ($(strip $(KERNELDIR)),)
