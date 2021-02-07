@@ -70,8 +70,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "linkage.h"
 #include "pvr_uaccess.h"
 
-#if !defined(CONFIG_PREEMPTION)
-#define	PVR_DEBUG_ALWAYS_USE_SPINLOCK
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0))
+    #if !defined(CONFIG_PREEMPT)
+        #define PVR_DEBUG_ALWAYS_USE_SPINLOCK
+    #endif
+#else
+    #if !defined(CONFIG_PREEMPTION)
+        #define PVR_DEBUG_ALWAYS_USE_SPINLOCK
+    #endif
 #endif
 
 #if defined(PVRSRV_NEED_PVR_DPF)

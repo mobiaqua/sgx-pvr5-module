@@ -116,7 +116,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define ON_EACH_CPU(func, info, wait) on_each_cpu(func, info, 0, wait)
 #endif
 
-#if defined(PVR_LINUX_USING_WORKQUEUES) && !defined(CONFIG_PREEMPTION) && !defined(CONFIG_PREEMPT_VOLUNTARY)
+#if defined(PVR_LINUX_USING_WORKQUEUES)
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0))
+        #if !defined(CONFIG_PREEMPT) && !defined(CONFIG_PREEMPT_VOLUNTARY)
 /* 
  * Services spins at certain points waiting for events (e.g. swap
  * chain destrucion).  If those events rely on workqueues running,
@@ -124,7 +126,20 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * Removing the need for CONFIG_PREEMPT will require adding preemption
  * points at various points in Services.
  */
-#error "A preemptible Linux kernel is required when using workqueues"
+            #error "A preemptible Linux kernel is required when using workqueues"
+        #endif
+    #else
+        #if !defined(CONFIG_PREEMPTION) && !defined(CONFIG_PREEMPT_VOLUNTARY)
+/* 
+ * Services spins at certain points waiting for events (e.g. swap
+ * chain destrucion).  If those events rely on workqueues running,
+ * it needs to be possible to preempt the waiting thread.
+ * Removing the need for CONFIG_PREEMPT will require adding preemption
+ * points at various points in Services.
+ */
+            #error "A preemptible Linux kernel is required when using workqueues"
+        #endif
+    #endif
 #endif
 
 extern struct platform_device *gpsPVRLDMDev;
@@ -3420,8 +3435,24 @@ PVRSRV_ERROR OSCopyFromUser( IMG_PVOID pvProcess,
 ******************************************************************************/
 IMG_BOOL OSAccessOK(IMG_VERIFY_TEST eVerification, IMG_VOID *pvUserPtr, IMG_SIZE_T uiBytes)
 {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0))
+    IMG_INT linuxType;
+
+    if (eVerification == PVR_VERIFY_READ)
+    {
+        linuxType = VERIFY_READ;
+    }
+    else
+    {
+        PVR_ASSERT(eVerification == PVR_VERIFY_WRITE);
+        linuxType = VERIFY_WRITE;
+    }
+
+    return access_ok(linuxType, pvUserPtr, uiBytes);
+#else
     (void)eVerification; /* unused */
     return access_ok(pvUserPtr, uiBytes);
+#endif
 }
 
 typedef enum _eWrapMemType_
