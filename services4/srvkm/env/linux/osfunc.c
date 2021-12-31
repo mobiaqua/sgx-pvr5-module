@@ -57,6 +57,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #else
 #include <asm/cacheflush.h>
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0))
+#include <linux/dma-map-ops.h>
+#endif
 #include <linux/mm.h>
 #include <linux/pagemap.h>
 #include <linux/hugetlb.h> 
@@ -3797,7 +3800,11 @@ PVRSRV_ERROR OSAcquirePhysPageAddr(IMG_VOID *pvCPUVAddr,
     psInfo->eType = WRAP_TYPE_GET_USER_PAGES;
 
     /* Lock down user memory */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0))
+    mmap_read_lock(current->mm);
+#else
     down_read(&current->mm->mmap_sem);
+#endif
     bMMapSemHeld = IMG_TRUE;
 
     /* Get page list */
@@ -3996,7 +4003,11 @@ PVRSRV_ERROR OSAcquirePhysPageAddr(IMG_VOID *pvCPUVAddr,
 
 exit:
     PVR_ASSERT(bMMapSemHeld);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0))
+    mmap_read_unlock(current->mm);
+#else
     up_read(&current->mm->mmap_sem);
+#endif
     bMMapSemHeld = IMG_FALSE;
 
     PVR_ASSERT(psInfo->eType != 0);
@@ -4027,7 +4038,11 @@ exit:
 error:
     if (bMMapSemHeld)
     {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0))
+        mmap_read_unlock(current->mm);
+#else
         up_read(&current->mm->mmap_sem);
+#endif
     }
     OSReleasePhysPageAddr((IMG_HANDLE)psInfo);
 

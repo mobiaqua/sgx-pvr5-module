@@ -537,7 +537,11 @@ _VMallocWrapper(IMG_SIZE_T uiBytes,
 #endif
 
 	/* Allocate virtually contiguous pages */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,8,0))
+    pvRet = __vmalloc(uiBytes, gfp_mask);
+#else
     pvRet = __vmalloc(uiBytes, gfp_mask, PGProtFlags);
+#endif
     
 #if defined(DEBUG_LINUX_MEMORY_ALLOCATIONS)
     if (pvRet)

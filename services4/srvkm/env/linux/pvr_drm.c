@@ -56,9 +56,17 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
 #include <asm/ioctl.h>
-#include <drm/drmP.h>
+#include <drm/drm_file.h>
+#include <drm/drm_ioctl.h>
+#include <drm/drm_drv.h>
+#include <drm/drm_device.h>
 #include <drm/drm.h>
 #include <linux/of_reserved_mem.h>
+#include <linux/of.h>
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0))
+#include <linux/sched/signal.h>
+#endif
 
 #include "img_defs.h"
 #include "services.h"
