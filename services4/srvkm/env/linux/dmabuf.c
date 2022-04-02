@@ -53,6 +53,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <drm/drm_drv.h>
 #include <drm/drm_device.h>
 #endif
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5,15,0)
+#include <linux/module.h>
+MODULE_IMPORT_NS(DMA_BUF);
+#endif
 
 #include "services_headers.h"
 #include "pvr_debug.h"

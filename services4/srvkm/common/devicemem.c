@@ -40,7 +40,12 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
+#include <linux/version.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
+#include <linux/stddef.h>
+#else
 #include <stddef.h>
+#endif
 
 #include "services_headers.h"
 #include "buffer_manager.h"
@@ -1088,7 +1093,7 @@ PVRSRV_ERROR FreeMemCallBackCommon(PVRSRV_KERNEL_MEM_INFO *psMemInfo,
 			case PVRSRV_MEMTYPE_ION:
 			case PVRSRV_MEMTYPE_DMABUF:
 				freeExternal(psMemInfo);
-				/* FALLTHRU */
+				fallthrough;
 			case PVRSRV_MEMTYPE_DEVICE:
 			case PVRSRV_MEMTYPE_DEVICECLASS:
 #if defined(SUPPORT_ION)

@@ -60,7 +60,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/module.h>
 #include <linux/spinlock.h>
 #include <linux/string.h>			// strncpy, strlen
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
+#include <linux/stdarg.h>
+#else
 #include <stdarg.h>
+#endif
 #include <linux/seq_file.h>
 #include "img_types.h"
 #include "servicesext.h"
