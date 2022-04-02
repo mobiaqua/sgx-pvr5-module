@@ -167,11 +167,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define PRIVATE_DATA(pFile) ((pFile)->private_data)
 #endif
 
-/*
- * This is all module configuration stuff required by the linux kernel.
- */
-MODULE_SUPPORTED_DEVICE(DEVNAME);
-
 #if defined(PVRSRV_NEED_PVR_DPF)
 #include <linux/moduleparam.h>
 extern IMG_UINT32 gPVRDebugLevel;
