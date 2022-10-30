@@ -425,6 +425,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 						struct reservation_object *resv)
 #endif
 {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0))
 	struct dma_resv_list *flist;
 #else
@@ -568,6 +569,96 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 	reservation_object_add_excl_fence(resv, fence_to_signal);
 #endif
 	return update_reservation_return_value(ret, false);
+#else // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
+	struct dma_fence *fence_to_signal;
+	unsigned blocking_fence_count;
+	int ret;
+
+	struct dma_resv_iter cursor;
+	struct dma_fence *fence;
+
+	ret = dma_resv_reserve_fences(resv, 1);
+	if (ret)
+	{
+		return ret;
+	}
+
+	fence_to_signal = create_fence_to_signal(pvr_fence_frame);
+	if (!fence_to_signal)
+	{
+		return -ENOMEM;
+	}
+
+	if (!pvr_fence_frame->have_blocking_fences)
+	{
+		dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_WRITE);
+		return 0;
+	}
+
+	dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+		if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_READ)
+			break;
+
+		if (is_blocking_fence(fence, pvr_fence_frame))
+		{
+			if (allocate_blocking_fence_storage(pvr_fence_frame, 1))
+			{
+				ret = install_and_get_blocking_fence(pvr_fence_frame, 0, fence);
+			}
+			else
+			{
+				dma_fence_put(fence_to_signal);
+				return -ENOMEM;
+			}
+		}
+		else
+		{
+			ret = 1;
+		}
+
+		dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_WRITE);
+		return update_reservation_return_value(ret, true);
+	}
+
+	dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+		if (dma_resv_iter_usage(&cursor) < DMA_RESV_USAGE_READ)
+			continue;
+
+		if (is_blocking_fence(fence, pvr_fence_frame))
+		{
+			blocking_fence_count++;
+		}
+	}
+
+	ret = 1;
+	if (blocking_fence_count)
+	{
+		if (allocate_blocking_fence_storage(pvr_fence_frame, blocking_fence_count))
+		{
+			dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+				if (dma_resv_iter_usage(&cursor) < DMA_RESV_USAGE_READ)
+					continue;
+
+				if (is_blocking_fence(fence, pvr_fence_frame))
+				{
+					if (!install_and_get_blocking_fence(pvr_fence_frame, cursor.index, fence))
+					{
+						ret = 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			dma_fence_put(fence_to_signal);
+			return -ENOMEM;
+		}
+	}
+
+	dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_WRITE);
+
+	return update_reservation_return_value(ret, false);
+#endif // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
 }
 
 static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
@@ -577,6 +668,7 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 						struct reservation_object *resv)
 #endif
 {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0))
 	struct dma_resv_list *flist;
 #else
@@ -726,6 +818,92 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 #endif
 
 	return update_reservation_return_value(ret, !shared_fence_count);
+#else // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
+	struct dma_resv_iter cursor;
+	struct dma_fence *fence;
+	struct dma_fence *fence_to_signal = NULL;
+	struct dma_fence *blocking_fence = NULL;
+	bool reserve = true;
+	unsigned shared_fence_count;
+	int ret;
+
+	if (!pvr_fence_frame->have_blocking_fences)
+	{
+		ret = dma_resv_reserve_fences(resv, 1);
+		if (ret)
+		{
+			return ret;
+		}
+
+		fence_to_signal = create_fence_to_signal(pvr_fence_frame);
+		if (!fence_to_signal)
+		{
+			return -ENOMEM;
+		}
+
+		dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_READ);
+
+		return 0;
+	}
+
+	shared_fence_count = 0;
+	dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+		if (dma_resv_iter_usage(&cursor) <= DMA_RESV_USAGE_WRITE)
+			continue;
+
+		shared_fence_count++;
+
+		if (is_pvr_fence(fence))
+		{
+			reserve = false;
+
+			if (is_blocking_fence(fence, pvr_fence_frame))
+			{
+				blocking_fence = fence;
+			}
+			break;
+		}
+	}
+
+	if (reserve)
+	{
+		ret = dma_resv_reserve_fences(resv, 1);
+		if (ret)
+		{
+			return ret;
+		}
+	}
+
+	fence_to_signal = create_fence_to_signal(pvr_fence_frame);
+	if (!fence_to_signal)
+	{
+		return -ENOMEM;
+	}
+
+	ret = 1;
+	if (!blocking_fence && !shared_fence_count)
+	{
+		dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_WRITE, fence) {
+			if (is_blocking_fence(fence, pvr_fence_frame))
+			{
+				if (allocate_blocking_fence_storage(pvr_fence_frame, 1))
+				{
+					ret = install_and_get_blocking_fence(pvr_fence_frame, 0, fence);
+				}
+				else
+				{
+					dma_fence_put(fence_to_signal);
+					return -ENOMEM;
+				}
+				break;
+			}
+		}
+	}
+
+	dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_READ);
+
+	return update_reservation_return_value(ret, !shared_fence_count);
+#endif
 }
 
 /* Must be called with pvr_fence_context mutex held */
@@ -1085,6 +1263,7 @@ static bool resv_is_blocking(
 				      const PVRSRV_KERNEL_SYNC_INFO *psSyncInfo,
 				      bool is_dst)
 {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0))
 	struct dma_resv_list *flist;
 #else
@@ -1159,6 +1338,49 @@ retry:
 unlock_retry:
 	rcu_read_unlock();
 	goto retry;
+#else // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
+	struct dma_resv_iter cursor;
+	struct dma_fence *fence;
+	bool blocking;
+
+	blocking = false;
+
+	rcu_read_lock();
+
+	if (is_dst)
+	{
+		dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_READ);
+		dma_resv_for_each_fence_unlocked(&cursor, fence) {
+			if (dma_resv_iter_usage(&cursor) <= DMA_RESV_USAGE_WRITE)
+				continue;
+
+			blocking = fence_is_blocking(fence, psSyncInfo);
+			if (blocking)
+				break;
+		}
+		dma_resv_iter_end(&cursor);
+	}
+
+	if (!blocking)
+	{
+		dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_READ);
+		dma_resv_for_each_fence_unlocked(&cursor, fence) {
+			if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_READ) {
+				break;
+			}
+
+			if (fence_is_blocking(fence, psSyncInfo)) {
+				blocking = true;
+				break;
+			}
+		}
+		dma_resv_iter_end(&cursor);
+	}
+
+	rcu_read_unlock();
+
+	return blocking;
+#endif
 }
 
 static unsigned count_reservation_objects(unsigned num_syncs,
