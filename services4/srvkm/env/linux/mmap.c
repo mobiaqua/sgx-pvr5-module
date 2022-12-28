@@ -100,13 +100,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #error "The mmap code requires PVR_SECURE_HANDLES"
 #endif
 
-#if defined(SUPPORT_DRI_DRM) && (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0))
-//static inline int drm_mmap(struct file *filp, struct vm_area_struct *vma)
-//{
-//	return drm_legacy_mmap(filp, vma);
-//}
-#endif
-
 /* WARNING:
  * The mmap code has its own mutex, to prevent a possible deadlock,
  * when using gPVRSRVLock.
@@ -1045,9 +1038,9 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 #if defined(SUPPORT_DRI_DRM)
 		LinuxUnLockMutex(&g_sMMapMutex);
 
-#if !defined(SUPPORT_DRI_DRM_EXT)
+#if !defined(SUPPORT_DRI_DRM_EXT) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,18,0))
 		/* Pass unknown requests onto the DRM module */
-		return -ENOENT;//drm_mmap(pFile, ps_vma);
+		return drm_mmap(pFile, ps_vma);
 #else
         /*
          * Indicate to caller that the request is not for us.
