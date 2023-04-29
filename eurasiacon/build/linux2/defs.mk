@@ -68,7 +68,12 @@ MODULE_ARCH := $$(strip $(2))
 include $$(MAKE_TOP)/moduledefs_common.mk
 include $$(MAKE_TOP)/moduledefs/$$(MODULE_ARCH).mk
 include $$(MAKE_TOP)/$$(strip $$($$(THIS_MODULE)_type)).mk
-.SECONDARY: $$(MODULE_INTERMEDIATES_DIR)
+ifneq ($(and $(filter notintermediate, $(.FEATURES)),$(filter-out 4.4,$(MAKE_VERSION))),)
+.NOTINTERMEDIATE:
+else
+.SECONDARY:
+endif
+	$$(MODULE_INTERMEDIATES_DIR)
 $$(MODULE_INTERMEDIATES_DIR):
 	$$(make-directory)
 MODULE_CLEAN_TARGETS += $$(MODULE_INTERMEDIATES_DIR)

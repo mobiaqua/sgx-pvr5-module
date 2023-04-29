@@ -54,7 +54,11 @@
 
 include $(OUT)/config_kernel.mk
 
+ifneq ($(and $(filter notintermediate, $(.FEATURES)),$(filter-out 4.4,$(MAKE_VERSION))),)
+.NOTINTERMEDIATE:
+else
 .SECONDARY:
+endif
 
 $(OUT)/$(TARGET_PRIMARY_ARCH)/kbuild/external/%.c: $(EXTRA_KBUILD_SOURCE)/%.c
 	@if [ ! -e $(dir $@) ]; then mkdir -p $(dir $@); fi

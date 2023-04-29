@@ -161,7 +161,12 @@ DOCS_OUT             := $(RELATIVE_OUT)/doc
 # (This is for the install scripts and other things that aren't made by
 # normal module rules.)
 TARGET_OUT_DIRECTORIES := $(addprefix $(RELATIVE_OUT)/,$(TARGET_ALL_ARCH)) $(TARGET_NEUTRAL_OUT) $(DOCS_OUT)
-.SECONDARY: $(TARGET_OUT_DIRECTORIES)
+ifneq ($(and $(filter notintermediate, $(.FEATURES)),$(filter-out 4.4,$(MAKE_VERSION))),)
+.NOTINTERMEDIATE:
+else
+.SECONDARY:
+endif
+	$(TARGET_OUT_DIRECTORIES)
 $(TARGET_OUT_DIRECTORIES):
 	$(make-directory)
 
