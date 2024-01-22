@@ -42,29 +42,15 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #include <asm/io.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0))
-#include <asm/uaccess.h>
-#else
 #include <linux/uaccess.h>
-#endif
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/hardirq.h>
 #include <linux/module.h>
 #include <linux/spinlock.h>
 #include <linux/string.h>			// strncpy, strlen
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
 #include <linux/stdarg.h>
-#else
-#include <stdarg.h>
-#endif
 #include <linux/seq_file.h>
 #include "img_types.h"
 #include "servicesext.h"
@@ -74,14 +60,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "linkage.h"
 #include "pvr_uaccess.h"
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,20,0))
-    #if !defined(CONFIG_PREEMPT)
-        #define PVR_DEBUG_ALWAYS_USE_SPINLOCK
-    #endif
-#else
-    #if !defined(CONFIG_PREEMPTION)
-        #define PVR_DEBUG_ALWAYS_USE_SPINLOCK
-    #endif
+#if !defined(CONFIG_PREEMPTION)
+#define	PVR_DEBUG_ALWAYS_USE_SPINLOCK
 #endif
 
 #if defined(PVRSRV_NEED_PVR_DPF)
@@ -210,13 +190,7 @@ static IMG_CHAR gszBufferIRQ[PVR_MAX_MSG_LEN + 1];
 static PVRSRV_LINUX_MUTEX gsDebugMutexNonIRQ;
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39))
-/* The lock is used to control access to gszBufferIRQ */
-/* PRQA S 0671,0685 1 */ /* ignore warnings about C99 style initialisation */
-static spinlock_t gsDebugLockIRQ = SPIN_LOCK_UNLOCKED;
-#else
 static DEFINE_SPINLOCK(gsDebugLockIRQ);
-#endif
 
 #if !defined(PVR_DEBUG_ALWAYS_USE_SPINLOCK)
 #if !defined (USE_SPIN_LOCK) /* to keep QAC happy */ 

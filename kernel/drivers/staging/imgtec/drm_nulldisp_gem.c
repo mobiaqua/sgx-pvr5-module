@@ -238,11 +238,7 @@ nulldisp_gem_prime_get_sg_table(struct drm_gem_object *obj)
 
 struct drm_gem_object *
 nulldisp_gem_prime_import_sg_table(struct drm_device *dev,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 				   struct dma_buf_attachment *attach,
-#else
-				   size_t size,
-#endif
 				   struct sg_table *sgt)
 {
 	/* No support for importing dma-bufs from other devices or drivers */
@@ -353,11 +349,7 @@ int nulldisp_gem_dumb_map_offset(struct drm_file *file,
 	int err;
 
 	mutex_lock(&dev->struct_mutex);
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0))
-	obj = drm_gem_object_lookup(dev, file, handle);
-#else
 	obj = drm_gem_object_lookup(file, handle);
-#endif
 	if (!obj) {
 		err = -ENOENT;
 		goto exit_unlock;

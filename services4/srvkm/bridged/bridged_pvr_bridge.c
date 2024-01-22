@@ -43,12 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
 
-#include <linux/version.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
 #include <linux/stddef.h>
-#else
-#include <stddef.h>
-#endif
 
 #include "img_defs.h"
 #include "services.h"
@@ -96,13 +91,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) || defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 #include <linux/file.h>
 #include <linux/version.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
-#include <linux/sync.h>
-#elif (LINUX_VERSION_CODE < KERNEL_VERSION(4,9,0))
-#include <../drivers/staging/android/sync.h>
-#else
 #include <../drivers/dma-buf/sync_debug.h>
-#endif
 #endif
 
 #include "srvkm.h"
@@ -3060,11 +3049,7 @@ PVRSRVSwapToDCBuffer2BW(IMG_UINT32 ui32BridgeID,
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) || defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 	int iReleaseFd;
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,2,0))
 	iReleaseFd = get_unused_fd_flags(0);
-#else
-	iReleaseFd = get_unused_fd();
-#endif
 
 	if(iReleaseFd < 0)
 	{

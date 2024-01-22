@@ -59,8 +59,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "buffer_manager.h"
 
 #if defined(SUPPORT_DRI_DRM)
-#include <drm/drm_drv.h>
 #include <drm/drm_file.h>
+#include <drm/drm_drv.h>
 #include <drm/drm_device.h>
 #include "pvr_drm.h"
 #if defined(PVR_SECURE_DRM_AUTH_EXPORT)

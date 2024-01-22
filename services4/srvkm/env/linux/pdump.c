@@ -43,11 +43,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined (PDUMP)
 
 #include <asm/atomic.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
 #include <linux/stdarg.h>
-#else
-#include <stdarg.h>
-#endif
 #if defined (SUPPORT_SGX)
 #include "sgxdefs.h" /* Is this still needed? */
 #endif

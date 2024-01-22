@@ -53,10 +53,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <drm/drm_drv.h>
 #include <drm/drm_device.h>
 #endif
-#if LINUX_VERSION_CODE > KERNEL_VERSION(5,15,0)
-#include <linux/module.h>
-MODULE_IMPORT_NS(DMA_BUF);
-#endif
 
 #include "services_headers.h"
 #include "pvr_debug.h"
@@ -87,9 +83,6 @@ IMG_VOID DmaBufUnimportAndReleasePhysAddr(IMG_HANDLE hImport)
 	{
 		dma_buf_vunmap(import->dma_buf, import->kvaddr);
 		dma_buf_end_cpu_access(import->dma_buf,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0))
-					0, import->dma_buf->size,
-#endif
 					DMA_BIDIRECTIONAL);
 	}
 #endif /* defined(PDUMP) */
@@ -252,9 +245,6 @@ PVRSRV_ERROR DmaBufImportAndAcquirePhysAddr(const IMG_INT32 i32FD,
 
 #if defined(PDUMP)
 	err = dma_buf_begin_cpu_access(import->dma_buf,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0))
-					0, import->dma_buf->size,
-#endif
 					DMA_BIDIRECTIONAL);
 	if (err)
 	{
@@ -291,7 +281,6 @@ error:
 	return eError;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
 IMG_HANDLE DmaBufGetNativeSyncHandle(IMG_HANDLE hImport)
 {
 	struct dmabuf_import *import;
@@ -317,18 +306,5 @@ void DmaBufFreeNativeSyncHandle(IMG_HANDLE hSync)
 
 	kfree(info);
 }
-#else	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)) */
-IMG_HANDLE DmaBufGetNativeSyncHandle(IMG_HANDLE hImport)
-{
-	(void) hImport;
-
-	return IMG_NULL;
-}
-
-void DmaBufFreeNativeSyncHandle(IMG_HANDLE hSync)
-{
-	(void) hSync;
-}
-#endif	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)) */
 
 #endif /* defined(SUPPORT_DMABUF) */

@@ -361,11 +361,7 @@ static void nulldisp_crtc_flip_complete(struct drm_crtc *crtc)
 	nulldisp_crtc->flip_data = NULL;
 
 	if (nulldisp_crtc->flip_event) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0))
 		drm_crtc_send_vblank_event(crtc, nulldisp_crtc->flip_event);
-#else
-		drm_send_vblank_event(crtc->dev, 0, nulldisp_crtc->flip_event);
-#endif
 		nulldisp_crtc->flip_event = NULL;
 	}
 
@@ -986,11 +982,7 @@ nulldisp_encoder_create(struct nulldisp_display_device *nulldisp_dev,
 				   encoder,
 				   &nulldisp_encoder_funcs,
 				   type
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0))
-				   );
-#else
 				   , NULL);
-#endif
 
 	if (err) {
 		DRM_ERROR("Failed to initialise encoder\n");
@@ -1088,11 +1080,7 @@ static const struct drm_framebuffer_funcs nulldisp_framebuffer_funcs = {
 
 static int
 nulldisp_framebuffer_init(struct drm_device *dev,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0))
-			  struct drm_mode_fb_cmd2 *mode_cmd,
-#else
 			  const struct drm_mode_fb_cmd2 *mode_cmd,
-#endif
 			  struct nulldisp_framebuffer *nulldisp_framebuffer,
 			  struct drm_gem_object *obj)
 {
@@ -1119,21 +1107,13 @@ nulldisp_framebuffer_init(struct drm_device *dev,
 static struct drm_framebuffer *
 nulldisp_fb_create(struct drm_device *dev,
 		   struct drm_file *file_priv,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0))
-		   struct drm_mode_fb_cmd2 *mode_cmd)
-#else
 		   const struct drm_mode_fb_cmd2 *mode_cmd)
-#endif
 {
 	struct drm_gem_object *obj;
 	struct nulldisp_framebuffer *nulldisp_framebuffer;
 	int err;
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 7, 0))
-	obj = drm_gem_object_lookup(dev, file_priv, mode_cmd->handles[0]);
-#else
 	obj = drm_gem_object_lookup(file_priv, mode_cmd->handles[0]);
-#endif
 	if (!obj) {
 		DRM_ERROR("failed to find buffer with handle %u\n",
 			  mode_cmd->handles[0]);
@@ -1340,35 +1320,7 @@ static int nulldisp_unload(struct drm_device *dev)
 	return 0;
 }
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0))
-static void
-nulldisp_crtc_flip_event_cancel(struct drm_crtc *crtc, struct drm_file *file)
-{
-	struct nulldisp_crtc *nulldisp_crtc = to_nulldisp_crtc(crtc);
-	unsigned long flags;
 
-	spin_lock_irqsave(&crtc->dev->event_lock, flags);
-
-	if (nulldisp_crtc->flip_event &&
-	    nulldisp_crtc->flip_event->base.file_priv == file) {
-		nulldisp_crtc->flip_event->base.destroy(
-					&nulldisp_crtc->flip_event->base);
-		nulldisp_crtc->flip_event = NULL;
-	}
-
-	spin_unlock_irqrestore(&crtc->dev->event_lock, flags);
-}
-#endif
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0))
-static void nulldisp_preclose(struct drm_device *dev, struct drm_file *file)
-{
-	struct drm_crtc *crtc;
-
-	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
-		nulldisp_crtc_flip_event_cancel(crtc, file);
-}
-#endif
 
 static void nulldisp_lastclose(struct drm_device *dev)
 {
@@ -1389,11 +1341,7 @@ static void nulldisp_lastclose(struct drm_device *dev)
 	drm_modeset_unlock_all(dev);
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
 static int nulldisp_enable_vblank(struct drm_device *dev, unsigned int crtc)
-#else
-static int nulldisp_enable_vblank(struct drm_device *dev, int crtc)
-#endif
 {
 	struct nulldisp_display_device *nulldisp_dev = dev->dev_private;
 
@@ -1401,11 +1349,7 @@ static int nulldisp_enable_vblank(struct drm_device *dev, int crtc)
 	case 0:
 		break;
 	default:
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
 		DRM_ERROR("invalid crtc %u\n", crtc);
-#else
-		DRM_ERROR("invalid crtc %d\n", crtc);
-#endif
 		return -EINVAL;
 	}
 
@@ -1417,11 +1361,7 @@ static int nulldisp_enable_vblank(struct drm_device *dev, int crtc)
 	return 0;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
 static void nulldisp_disable_vblank(struct drm_device *dev, unsigned int crtc)
-#else
-static void nulldisp_disable_vblank(struct drm_device *dev, int crtc)
-#endif
 {
 	struct nulldisp_display_device *nulldisp_dev = dev->dev_private;
 
@@ -1429,11 +1369,7 @@ static void nulldisp_disable_vblank(struct drm_device *dev, int crtc)
 	case 0:
 		break;
 	default:
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
 		DRM_ERROR("invalid crtc %u\n", crtc);
-#else
-		DRM_ERROR("invalid crtc %d\n", crtc);
-#endif
 		return;
 	}
 
@@ -1486,20 +1422,9 @@ static const struct file_operations nulldisp_driver_fops = {
 static struct drm_driver nulldisp_drm_driver = {
 	.load				= nulldisp_load,
 	.unload				= nulldisp_unload,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0))
-	.preclose			= nulldisp_preclose,
-#endif
 	.lastclose			= nulldisp_lastclose,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)) && \
-	(LINUX_VERSION_CODE < KERNEL_VERSION(4, 5, 0))
-	.set_busid			= drm_platform_set_busid,
-#endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 4, 0))
 	.get_vblank_counter		= drm_vblank_no_hw_counter,
-#else
-	.get_vblank_counter		= drm_vblank_count,
-#endif
 	.enable_vblank			= nulldisp_enable_vblank,
 	.disable_vblank			= nulldisp_disable_vblank,
 

@@ -41,12 +41,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(TRANSFER_QUEUE)
 
-#include <linux/version.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
 #include <linux/stddef.h>
-#else
-#include <stddef.h>
-#endif
 
 #include "sgxdefs.h"
 #include "services_headers.h"

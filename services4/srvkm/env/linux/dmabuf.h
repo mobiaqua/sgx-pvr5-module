@@ -49,23 +49,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "img_types.h"
 #include "servicesext.h"
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0))
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0))
 #include <linux/dma-resv.h>
-#else
-#include <linux/reservation.h>
-#endif
-
 #include "pvr_bridge.h"
 
 struct dmabuf_resvinfo
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0))
 	struct dma_resv *resv;
-#else
-	struct reservation_object *resv;
-#endif
 };
 
 static inline void *DmaBufGetReservationObject(IMG_HANDLE hSync)
@@ -76,14 +65,6 @@ static inline void *DmaBufGetReservationObject(IMG_HANDLE hSync)
 
 	return info->resv;
 }
-#else
-static inline void *DmaBufGetReservationObject(IMG_HANDLE hSync)
-{
-	(void) hSync;
-
-	return (void *)0;
-}
-#endif
 
 PVRSRV_ERROR DmaBufInit(IMG_VOID);
 

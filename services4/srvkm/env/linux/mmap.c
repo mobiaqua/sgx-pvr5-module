@@ -41,37 +41,22 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,0))
-#include <linux/wrapper.h>
-#endif
 #include <linux/slab.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26))
 #include <linux/highmem.h>
-#endif
 #include <asm/io.h>
 #include <asm/page.h>
 #include <asm/shmparam.h>
 #include <asm/pgtable.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,22))
 #include <linux/sched.h>
 #include <asm/current.h>
-#endif
 #if defined(SUPPORT_DRI_DRM)
 #include <drm/drm_file.h>
 #include <drm/drm_drv.h>
 #include <drm/drm_device.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0))
 #include <drm/drm_legacy.h>
-#endif
 #endif
 
 #ifdef CONFIG_ARCH_OMAP5
@@ -784,20 +769,12 @@ DoMapToUser(LinuxMemArea *psLinuxMemArea,
 #if defined(PVR_MAKE_ALL_PFNS_SPECIAL)
 		    if (bMixedMap)
 		    {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0))
 			pfn_t pfns = { pfn };
 			vm_fault_t vmf;
 
 			vmf = vmf_insert_mixed(ps_vma, ulVMAPos, pfns);
 			if (vmf & VM_FAULT_ERROR)
 				result = vm_fault_to_errno(vmf, 0);
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0))
-			pfn_t pfns = { pfn };
-
-			result = vm_insert_mixed(ps_vma, ulVMAPos, pfns);
-#else
-			result = vm_insert_mixed(ps_vma, ulVMAPos, pfn);
-#endif
 	                if(result != 0)
 	                {
 	                    PVR_DPF((PVR_DBG_ERROR,"%s: Error - vm_insert_mixed failed (%d)", __FUNCTION__, result));
@@ -923,7 +900,6 @@ MMapVClose(struct vm_area_struct* ps_vma)
     LinuxUnLockMutex(&g_sMMapMutex);
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26))
 /*
  * This vma operation is used to read data from mmap regions. It is called
  * by access_process_vm, which is called to handle PTRACE_PEEKDATA ptrace
@@ -984,15 +960,12 @@ exit_unlock:
 	LinuxUnLockMutex(&g_sMMapMutex);
     return iRetVal;
 }
-#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26) */
 
 static struct vm_operations_struct MMapIOOps =
 {
 	.open=MMapVOpen,
 	.close=MMapVClose,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26))
 	.access=MMapVAccess,
-#endif
 };
 
 
@@ -1042,10 +1015,6 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 #if defined(SUPPORT_DRI_DRM)
 		LinuxUnLockMutex(&g_sMMapMutex);
 
-#if !defined(SUPPORT_DRI_DRM_EXT) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,18,0))
-		/* Pass unknown requests onto the DRM module */
-		return drm_mmap(pFile, ps_vma);
-#else
         /*
          * Indicate to caller that the request is not for us.
          * Do not return this error elsewhere in this function, as the
@@ -1053,7 +1022,6 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
          * should be passed on to another component (e.g. drm_mmap).
          */
         return -ENOENT;
-#endif
 #else
         PVR_UNREFERENCED_PARAMETER(pFile);
 
@@ -1080,10 +1048,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
     PVR_DPF((PVR_DBG_MESSAGE, "%s: Mapped psLinuxMemArea 0x%p\n",
          __FUNCTION__, psOffsetStruct->psLinuxMemArea));
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0))
-    /* This is probably superfluous and implied by VM_IO */
-    ps_vma->vm_flags |= VM_RESERVED;
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0))
     vm_flags_set(ps_vma, VM_DONTDUMP);
 #else
     ps_vma->vm_flags |= VM_DONTDUMP;

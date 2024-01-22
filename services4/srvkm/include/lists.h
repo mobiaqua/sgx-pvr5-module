@@ -45,12 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /* instruct QAC to ignore warnings about the following custom formatted macros */
 /* PRQA S 0881,3410 ++ */
-#include <linux/version.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,16,0))
 #include <linux/stdarg.h>
-#else
-#include <stdarg.h>
-#endif
 #include "img_types.h"
 
 /*

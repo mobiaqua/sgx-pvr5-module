@@ -71,11 +71,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0))
-#include <asm/uaccess.h>
-#else
 #include <linux/uaccess.h>
-#endif
 #include <asm/io.h>
 
 #if defined(LMA)
@@ -84,9 +80,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/dma-mapping.h>
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 #include <linux/mutex.h>
-#endif
 
 #if defined(BC_DISCONTIG_BUFFERS)
 #include <linux/vmalloc.h>
@@ -105,24 +99,14 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #undef BCE_USE_SET_MEMORY
 #endif
 
-#if (defined(__i386__) || defined(__x86_64__)) && (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26)) && defined(SUPPORT_LINUX_X86_PAT) && defined(SUPPORT_LINUX_X86_WRITECOMBINE)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0))
+#if (defined(__i386__) || defined(__x86_64__)) && defined(SUPPORT_LINUX_X86_PAT) && defined(SUPPORT_LINUX_X86_WRITECOMBINE)
 #include <asm/set_memory.h>
-#else
-#include <asm/cacheflush.h>
-#endif
 #define	BCE_USE_SET_MEMORY
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 static long BC_Example_Bridge_Unlocked(struct file *file, unsigned int cmd, unsigned long arg);
-#else
-static int BC_Example_Bridge(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg);
-#endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 static DEFINE_MUTEX(sBCExampleBridgeMutex);
-#endif
 
 #if defined(LDM_PLATFORM) || defined(LDM_PCI)
 /*
@@ -137,11 +121,7 @@ static struct class *psPvrClass;
 static int AssignedMajorNumber;
 
 static struct file_operations bufferclass_example_fops = {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	.unlocked_ioctl = BC_Example_Bridge_Unlocked
-#else
-	.ioctl = BC_Example_Bridge
-#endif
 };
 
 
@@ -248,9 +228,7 @@ static int __init BC_Example_ModInit(void)
 	}
 
 	psDev = device_create(psPvrClass, NULL, MKDEV(AssignedMajorNumber, 0),
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26))
 						  NULL,
-#endif /* (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26)) */
 						  DEVNAME);
 	if (IS_ERR(psDev))
 	{
@@ -592,7 +570,6 @@ static int BC_Example_Bridge(struct inode *inode, struct file *file, unsigned in
 	return 0;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 static long BC_Example_Bridge_Unlocked(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int res;
@@ -603,7 +580,6 @@ static long BC_Example_Bridge_Unlocked(struct file *file, unsigned int cmd, unsi
 
 	return res;
 }
-#endif
 
 /*
  These macro calls define the initialisation and removal functions of the

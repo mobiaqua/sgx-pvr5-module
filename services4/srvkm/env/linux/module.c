@@ -41,12 +41,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #if defined(SUPPORT_DRI_DRM) && !defined(SUPPORT_DRI_DRM_PLUGIN)
 #define	PVR_MOD_STATIC
 #else
@@ -108,11 +102,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif /* PVR_LDM_DEVICE_CLASS */
 
 #if defined(DEBUG) && defined(PVR_MANUAL_POWER_CONTROL)
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0)
-#include <asm/uaccess.h>
-#else
 #include <linux/uaccess.h>
-#endif
 #endif
 
 #include "img_defs.h"
@@ -166,6 +156,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #else
 #define PRIVATE_DATA(pFile) ((pFile)->private_data)
 #endif
+
+/*
+ * This is all module configuration stuff required by the linux kernel.
+ */
 
 #if defined(PVRSRV_NEED_PVR_DPF)
 #include <linux/moduleparam.h>
@@ -1094,9 +1088,7 @@ static int __init PVRCore_Init(void)
 	}
 
 	psDev = device_create(psPvrClass, NULL, MKDEV(AssignedMajorNumber, 0),
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26))
 				  NULL,
-#endif /* (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26)) */
 				  DEVNAME);
 	if (IS_ERR(psDev))
 	{
@@ -1216,18 +1208,7 @@ static void __exit PVRCore_Cleanup(void)
 	class_destroy(psPvrClass);
 #endif
 
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,22))
-	if (
-#endif	/* (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,22)) */
-		unregister_chrdev((IMG_UINT)AssignedMajorNumber, DEVNAME)
-#if !(LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,22))
-								;
-#else	/* (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,22)) */
-								)
-	{
-		PVR_DPF((PVR_DBG_ERROR," can't unregister device major %d", AssignedMajorNumber));
-	}
-#endif	/* (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,22)) */
+    unregister_chrdev((IMG_UINT)AssignedMajorNumber, DEVNAME);
 #endif	/* !defined(SUPPORT_DRI_DRM) */
 
 #if defined(PVR_LDM_MODULE)

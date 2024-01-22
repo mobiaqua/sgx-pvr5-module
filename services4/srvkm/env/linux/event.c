@@ -41,17 +41,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #include <asm/io.h>
 #include <asm/page.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,22)) && (LINUX_VERSION_CODE < KERNEL_VERSION(3,2,0))
-#include <asm/system.h>
-#endif
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
@@ -66,11 +57,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/timer.h>
 #include <linux/capability.h>
 #include <linux/sched.h>
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0))
-#include <asm/uaccess.h>
-#else
 #include <linux/uaccess.h>
-#endif
 
 #include "img_types.h"
 #include "services_headers.h"

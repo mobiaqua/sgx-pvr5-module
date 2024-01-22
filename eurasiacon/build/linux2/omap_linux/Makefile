@@ -87,7 +87,7 @@ else ifneq ($(filter ti343x,$(TARGET_PRODUCT)),)
 else
  # If a product wasn't specified, error out to prevent building for the wrong platform
  $(warning *** Unrecognised or empty TARGET_PRODUCT: $(TARGET_PRODUCT))
- $(error *** Supported Target Systems are: ti335x ti437x ti672x ti654x ti443x ti343x)
+ $(error *** Supported Target Systems are: ti335x ti437x ti572x ti654x ti443x ti343x)
 endif
 
 PVRSRV_NEED_PVR_DPF := 1

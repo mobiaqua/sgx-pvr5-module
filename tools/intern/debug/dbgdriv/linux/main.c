@@ -57,11 +57,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/pci.h>
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0))
-#include <asm/uaccess.h>
-#else
 #include <linux/uaccess.h>
-#endif
 
 #if defined(SUPPORT_DRI_DRM)
 #include "drmP.h"
@@ -199,9 +195,7 @@ static int __init dbgdrv_init(void)
 	}
 
 	psDev = device_create(psDbgDrvClass, NULL, MKDEV(AssignedMajorNumber, 0),
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,26))
 						  NULL,
-#endif
 						  DRVNAME);
 	if (IS_ERR(psDev))
 	{

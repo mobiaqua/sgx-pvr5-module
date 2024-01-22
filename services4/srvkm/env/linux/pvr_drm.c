@@ -43,12 +43,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38))
-#ifndef AUTOCONF_INCLUDED
-#include <linux/config.h>
-#endif
-#endif
-
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -62,9 +56,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <drm/drm_device.h>
 #include <drm/drm.h>
 #include <linux/of_reserved_mem.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0))
 #include <linux/of.h>
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0))
 #include <linux/sched/signal.h>
 #endif
 
@@ -93,9 +86,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_drm_mod.h"
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,16,0))
 #define DRM_ARRAY_SIZE(x) ARRAY_SIZE(x)
-#endif
 
 #if (defined(PVR_LDM_PLATFORM_PRE_REGISTERED) || defined(PVR_LDM_DEVICE_TREE)) && !defined(NO_HARDWARE)
 #define PVR_USE_PRE_REGISTERED_PLATFORM_DEV
@@ -116,11 +107,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #define	PVR_DRM_DATE	"20110701"
 
 #if defined(PVR_DRI_DRM_PLATFORM_DEV) && !defined(SUPPORT_DRI_DRM_PLUGIN)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
 #define PVR_NEW_STYLE_DRM_PLATFORM_DEV
-#else
-#define PVR_OLD_STYLE_DRM_PLATFORM_DEV
-#endif
 #endif
 
 /*
@@ -132,18 +119,12 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * as the workqueue won't get scheduled.
  */
 #undef	PVR_DRI_DRM_USE_POST_CLOSE
-#if (defined(SUPPORT_DRI_DRM_EXT) && !defined(PVR_LINUX_USING_WORKQUEUES)) || \
-	(LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
+#if (defined(SUPPORT_DRI_DRM_EXT) && !defined(PVR_LINUX_USING_WORKQUEUES))
 #define	PVR_DRI_DRM_USE_POST_CLOSE
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
 #define PVR_DRM_DRIVER_RENDER	DRIVER_RENDER
 #define PVR_DRM_RENDER_ALLOW	DRM_RENDER_ALLOW
-#else
-#define PVR_DRM_DRIVER_RENDER	0
-#define PVR_DRM_RENDER_ALLOW	0
-#endif
 
 DECLARE_WAIT_QUEUE_HEAD(sWaitForInit);
 
@@ -167,10 +148,6 @@ struct pci_dev *gpsPVRLDMDev;
 #endif
 
 struct drm_device *gpsPVRDRMDev;
-
-#if (LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,24))
-#error "Linux kernel version 2.6.25 or later required for PVR DRM support"
-#endif
 
 #define PVR_DRM_FILE struct drm_file *
 
@@ -433,11 +410,7 @@ PVRSRVPciProbe(struct pci_dev *dev, const struct pci_device_id *id)
 {
 	PVR_TRACE(("PVRSRVPciProbe"));
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36))
 	return drm_get_pci_dev(dev, id, &sPVRDrmDriver);
-#else
-	return drm_get_dev(dev, id, &sPVRDrmDriver);
-#endif
 }
 
 static void
@@ -459,13 +432,8 @@ PVRSRVPciRemove(struct pci_dev *dev)
  * ioctls, or add a new one, consider whether the gPVRSRVLock mutex needs
  * to be taken.
  */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,33))
 #define	PVR_DRM_FOPS_IOCTL	.unlocked_ioctl
 #define	PVR_DRM_UNLOCKED	DRM_UNLOCKED
-#else
-#define	PVR_DRM_FOPS_IOCTL	.ioctl
-#define	PVR_DRM_UNLOCKED	0
-#endif
 
 #if !defined(DRM_IOCTL_DEF_DRV)
 #define DRM_IOCTL_DEF_DRV(ioctl, _func, _flags) DRM_IOCTL_DEF(DRM_##ioctl, _func, _flags)
@@ -513,7 +481,6 @@ static PVRSRV_DRM_PLUGIN sPVRDrmPlugin =
 };
 #else	/* defined(SUPPORT_DRI_DRM_PLUGIN) */
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
 #if defined(CONFIG_COMPAT)
 static long pvr_compat_ioctl(struct file *file, unsigned int cmd,
 			     unsigned long arg)
@@ -544,11 +511,7 @@ static const struct file_operations sPVRFileOps =
 #endif
 	.mmap = PVRMMap,
 	.poll = drm_poll,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0))
-	.fasync = drm_fasync,
-#endif
 };
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)) */
 
 static struct drm_driver sPVRDrmDriver = 
 {
@@ -570,70 +533,8 @@ static struct drm_driver sPVRDrmDriver =
 	.suspend = PVRSRVDriverSuspend,
 	.resume = PVRSRVDriverResume,
 #endif
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,37))
-	.get_map_ofs = drm_core_get_map_ofs,
-	.get_reg_ofs = drm_core_get_reg_ofs,
-#endif
 	.ioctls = sPVRDrmIoctls,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
 	.fops = &sPVRFileOps,
-#else
-	.fops = 
-	{
-		.owner = THIS_MODULE,
-		.open = drm_open,
-#if defined(PVR_DRI_DRM_USE_POST_CLOSE)
-		.release = drm_release,
-#else
-		.release = PVRSRVDrmRelease,
-#endif
-		PVR_DRM_FOPS_IOCTL = drm_ioctl,
-		.mmap = PVRMMap,
-		.poll = drm_poll,
-		.fasync = drm_fasync,
-	},
-#endif /* (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)) */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,39))
-#if defined(PVR_OLD_STYLE_DRM_PLATFORM_DEV)
-	.platform_driver =
-	{
-		.id_table = asPlatIdList,
-		.driver =
-		{
-			.name = PVR_DRM_NAME,
-		},
-		.probe = PVRSRVDrmProbe,
-		.remove = PVRSRVDrmRemove,
-		.suspend = PVRSRVDriverSuspend,
-		.resume = PVRSRVDriverResume,
-		.shutdown = PVRSRVDriverShutdown,
-	},
-#else
-	.pci_driver = 
-	{
-		.name = PVR_DRM_NAME,
-		.id_table = asPciIdList,
-#if defined(SUPPORT_DRM_MODESET)
-		.probe = PVRSRVPciProbe,
-		.remove = PVRSRVPciRemove,
-		.suspend = PVRSRVDriverSuspend,
-		.resume = PVRSRVDriverResume,
-#endif
-	},
-#endif
-#endif
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,0)) && (LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0))
-#if defined(LDM_PLATFORM)
-	.set_busid = drm_platform_set_busid,
-#else
-#if defined(LDM_PCI)
-	.set_busid = drm_pci_set_busid,
-#else
-	#error "LDM_PLATFORM or LDM_PCI must be set"
-#endif
-#endif
-#endif
 	.name = "pvr",
 	.desc = PVR_DRM_DESC,
 	.date = PVR_DRM_DATE,
@@ -642,7 +543,7 @@ static struct drm_driver sPVRDrmDriver =
 	.patchlevel = PVRVERSION_BUILD,
 };
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) && !defined(PVR_DRI_DRM_PLATFORM_DEV)
+#if !defined(PVR_DRI_DRM_PLATFORM_DEV)
 static struct pci_driver sPVRPCIDriver =
 {
 		.name = PVR_DRM_NAME,
@@ -778,15 +679,11 @@ static int __init PVRSRVDrmInit(void)
 	}
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
 #if defined(PVR_DRI_DRM_PLATFORM_DEV)
 	iRes = drm_platform_init(&sPVRDrmDriver, gpsPVRLDMDev);
 #else
 	iRes = drm_pci_init(&sPVRDrmDriver, &sPVRPCIDriver);
 #endif
-#else	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
-	iRes = drm_init(&sPVRDrmDriver);
-#endif	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
 
 #if defined(PVR_DRI_DRM_NOT_PCI)
 	if (iRes != 0)
@@ -810,15 +707,11 @@ static void __exit PVRSRVDrmExit(void)
 #if defined(SUPPORT_DRI_DRM_PLUGIN)
 	SysDRMUnregisterPlugin(&sPVRDrmPlugin);
 #else	/* defined(SUPPORT_DRI_DRM_PLUGIN) */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39))
 #if defined(PVR_DRI_DRM_PLATFORM_DEV)
 	drm_platform_exit(&sPVRDrmDriver, gpsPVRLDMDev);
 #else
 	drm_pci_exit(&sPVRDrmDriver, &sPVRPCIDriver);
 #endif
-#else	/* (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
-	drm_exit(&sPVRDrmDriver);
-#endif	/* LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,39)) */
 
 #if defined(PVR_DRI_DRM_NOT_PCI)
 	drm_pvr_dev_remove();

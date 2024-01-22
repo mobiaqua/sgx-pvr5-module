@@ -49,9 +49,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <drm/drmP.h>
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 #include <drm/drm_gem.h>
-#endif
 
 struct page **nulldisp_gem_object_get_pages(struct drm_gem_object *obj);
 
@@ -72,11 +70,7 @@ struct sg_table *nulldisp_gem_prime_get_sg_table(struct drm_gem_object *obj);
 
 struct drm_gem_object *nulldisp_gem_prime_import_sg_table(
 				struct drm_device *dev,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 				struct dma_buf_attachment *attach,
-#else
-				size_t size,
-#endif
 				struct sg_table *sgt);
 
 struct dma_buf *nulldisp_gem_prime_export(struct drm_device *dev,

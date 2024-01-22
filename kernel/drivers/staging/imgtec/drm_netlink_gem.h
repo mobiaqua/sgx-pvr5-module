@@ -49,9 +49,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <drm/drmP.h>
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0))
 #include <drm/drm_gem.h>
-#endif
 
 int netlink_gem_mmap(struct file *file, struct vm_area_struct *vma);
 
