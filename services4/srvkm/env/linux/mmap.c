@@ -1044,7 +1044,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
         iRetVal = -EINVAL;
         goto unlock_and_return;
     }
-
+   
     PVR_DPF((PVR_DBG_MESSAGE, "%s: Mapped psLinuxMemArea 0x%p\n",
          __FUNCTION__, psOffsetStruct->psLinuxMemArea));
 
@@ -1068,7 +1068,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 #else
     ps_vma->vm_flags |= VM_DONTEXPAND;
 #endif
-
+    
     /* Don't allow mapping to be inherited across a process fork */
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0))
     vm_flags_set(ps_vma, VM_DONTCOPY);
@@ -1077,7 +1077,7 @@ PVRMMap(struct file* pFile, struct vm_area_struct* ps_vma)
 #endif
 
     ps_vma->vm_private_data = (void *)psOffsetStruct;
-
+    
     switch(psOffsetStruct->psLinuxMemArea->ui32AreaFlags & PVRSRV_HAP_CACHETYPE_MASK)
     {
         case PVRSRV_HAP_CACHED:

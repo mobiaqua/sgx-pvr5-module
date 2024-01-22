@@ -142,7 +142,7 @@ static void* ProcSeqOff2ElementSysNodes(struct seq_file * sfile, loff_t off);
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5,16,0))
 // defined in proc_fs.h
 #else
-#define PDE_DATA pde_data // renamed to lower case
+#define PDE_DATA pde_data	// renamed to lower case
 #endif
 
 #ifdef DEBUG
@@ -813,7 +813,6 @@ IMG_VOID RemoveProcEntries(IMG_VOID)
 	RemoveProcEntrySeq(g_pProcSysNodes);
 
 	proc_remove(dir);
-
 }
 
 /*************************************************************************/ /*!

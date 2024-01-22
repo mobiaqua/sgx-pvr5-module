@@ -45,7 +45,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #ifdef __linux__
 #include <linux/version.h>
 
-
 #include <linux/sched.h>
 #include <linux/hardirq.h>
 

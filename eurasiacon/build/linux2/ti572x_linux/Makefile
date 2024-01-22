@@ -1,4 +1,5 @@
 ########################################################################### ###
+#@Title         Root makefile for TI Linux.  Builds everything else.
 #@Copyright     Copyright (c) Imagination Technologies Ltd. All Rights Reserved
 #@License       Dual MIT/GPLv2
 # 
@@ -37,9 +38,84 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### ###########################################################################
-ccflags-y += -I$(TOP)/services4/3rdparty/bufferclass_example
 
-bufferclass_example-y += \
-	services4/3rdparty/bufferclass_example/bufferclass_example.o \
-	services4/3rdparty/bufferclass_example/bufferclass_example_linux.o \
-	services4/3rdparty/bufferclass_example/bufferclass_example_private.o
+include ../config/window_system.mk
+
+SGXCORE := 544
+SGX_CORE_REV := 116
+SGX_FEATURE_MP := 1
+SGX_FEATURE_SYSTEM_CACHE := 1
+SGX_FEATURE_MP_CORE_COUNT := 2
+
+PVRSRV_NEED_PVR_DPF := 1
+PVRSRV_NEW_PVR_DPF := 1
+#PVRSRV_NEED_PVR_TRACE := 1
+
+# Disable active power management
+SUPPORT_ACTIVE_POWER_MANAGEMENT := 0
+
+# Disable Device Class
+SUPPORT_PVRSRV_DEVICE_CLASS := 0
+
+# Enable SONAME
+DONT_USE_SONAMES := 0
+
+# Disable  GL_IMG_texture_stream extension in GLES1 and GLES2 to remove
+# invalid unit tests
+GLES1_EXTENSION_EGL_IMAGE_EXTERNAL := 1
+GLES2_EXTENSION_EGL_IMAGE_EXTERNAL := 1
+
+# Specify the output directories
+BIN_DESTDIR := /usr/bin
+SHARE_DESTDIR := /usr/bin
+
+# Disable Buffer Class
+PVR_LWS_NOBC := 1
+
+PVR_NO_OMAP_TIMER := 1
+
+PVR_SYSTEM := omap
+
+KERNEL_COMPONENTS := srvkm
+
+# Only enable active power management if passive power management is
+# enabled, as indicated by LDM_PLATFORM being set to 1.  On OMAP,
+# the system can suspend in the case where active power management is
+# enabled in the SGX driver, but passive power management isn't. As
+# passive power management isn't enabled, the driver won't see the
+# system suspend/resume events, and so won't take appropriate action.
+LDM_PLATFORM := 1
+SUPPORT_LINUX_USING_WORKQUEUES := 1
+
+# Compiler args for this platform
+ARCH := arm
+SYS_CFLAGS := -march=armv7-a+fp -ftree-vectorize -mfpu=neon -mfloat-abi=hard
+SYS_CXXFLAGS := $(SYS_CFLAGS)
+SYS_LDFLAGS := $(SYS_CFLAGS)
+
+SGX_DYNAMIC_TIMING_INFO := 1
+SYS_CUSTOM_POWERLOCK_WRAP := 1
+
+PVRSRV_MODNAME := omapdrm_pvr_$(TARGET_PRODUCT)
+
+include ../common/xorg_test.mk
+include ../kernel_version.mk
+
+XORG_EXPLICIT_PVR_SERVICES_LOAD := 1
+SUPPORT_DRI_DRM := 1
+PVR_LDM_DEVICE_TREE := 1
+PVR_DRI_DRM_PLATFORM_DEV := 1
+SUPPORT_DMABUF := 1
+
+PVR_DRM_MODESET_DRIVER_NAME := omapdrm
+PVR_DRM_MODESET_MODULE_NAME := dumb
+
+# No display class driver.
+DISPLAY_CONTROLLER_COMPONENT :=
+DISPLAY_CONTROLLER :=
+
+include ../config/core.mk
+include ../common/xorg.mk
+include ../common/dridrm.mk
+include ../common/opencl.mk
+include ../common/omap4.mk

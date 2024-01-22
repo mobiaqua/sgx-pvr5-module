@@ -85,20 +85,6 @@ PVRSRV_ERROR OSPerProcessPrivateDataInit(IMG_HANDLE *phOsPrivateData)
 	INIT_LIST_HEAD(&psEnvPerProc->sDRMAuthListHead);
 #endif
 
-#if defined(SUPPORT_ION)
-	OSSNPrintf(psEnvPerProc->azIonClientName, ION_CLIENT_NAME_SIZE, "pvr_ion_client-%d", OSGetCurrentProcessIDKM());
-	psEnvPerProc->psIONClient =
-		ion_client_create(gpsIonDev,
-						  psEnvPerProc->azIonClientName);
- 
-	if (IS_ERR_OR_NULL(psEnvPerProc->psIONClient))
-	{
-		PVR_DPF((PVR_DBG_ERROR, "OSPerProcessPrivateDataInit: Couldn't create "
-								"ion client for per process data"));
-		return PVRSRV_ERROR_OUT_OF_MEMORY;
-	}
-#endif /* defined(SUPPORT_ION) */
-
 	return PVRSRV_OK;
 }
 
@@ -113,14 +99,6 @@ PVRSRV_ERROR OSPerProcessPrivateDataDeInit(IMG_HANDLE hOsPrivateData)
 	}
 
 	psEnvPerProc = (PVRSRV_ENV_PER_PROCESS_DATA *)hOsPrivateData;
-
-#if defined(SUPPORT_ION)
-	if (psEnvPerProc->psIONClient)
-	{
-		ion_client_destroy(psEnvPerProc->psIONClient);
-		psEnvPerProc->psIONClient = IMG_NULL;
-	}
-#endif /* defined(SUPPORT_ION) */
 
 	/* Linux specific mmap processing */
 	LinuxMMapPerProcessDisconnect(psEnvPerProc);

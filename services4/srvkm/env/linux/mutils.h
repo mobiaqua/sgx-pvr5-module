@@ -74,7 +74,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 	#define	IOREMAP(pa, bytes)	ioremap_cache(pa, bytes)
 #else	
 	#if defined(__arm__) || defined(__aarch64__)
-		#define	IOREMAP(pa, bytes)	ioremap_cache(pa, bytes)
+				#define	IOREMAP(pa, bytes)	ioremap_cache(pa, bytes)
 	#else
 		#define IOREMAP(pa, bytes)	ioremap(pa, bytes)
 	#endif
@@ -95,9 +95,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0))
-        #define IOREMAP_UC(pa, bytes)   ioremap_nocache(pa, bytes)
+	#define	IOREMAP_UC(pa, bytes)	ioremap_nocache(pa, bytes)
 #else
-        #define IOREMAP_UC(pa, bytes)   ioremap(pa, bytes)
+	#define IOREMAP_UC(pa, bytes)	ioremap(pa, bytes)
 #endif
 
 IMG_VOID PVRLinuxMUtilsInit(IMG_VOID);

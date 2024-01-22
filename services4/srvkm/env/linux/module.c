@@ -73,6 +73,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(PVR_LDM_DEVICE_TREE) && !defined(NO_HARDWARE)
 #define PVR_USE_DEVICE_TREE
+#include <linux/of_device.h>
 #endif
 
 #include <linux/init.h>
@@ -777,6 +778,10 @@ static int PVRSRVOpen(struct inode unref__ * pInode, struct file *pFile)
 
 	LinuxLockMutexNested(&gPVRSRVLock, PVRSRV_LOCK_CLASS_BRIDGE);
 
+#if !defined(SUPPORT_DRI_DRM)
+	pFile->f_mode |= FMODE_UNSIGNED_OFFSET;
+#endif
+
 	ui32PID = OSGetCurrentProcessIDKM();
 
 	if (PVRSRVProcessConnect(ui32PID, 0) != PVRSRV_OK)
@@ -1208,7 +1213,7 @@ static void __exit PVRCore_Cleanup(void)
 	class_destroy(psPvrClass);
 #endif
 
-    unregister_chrdev((IMG_UINT)AssignedMajorNumber, DEVNAME);
+	unregister_chrdev((IMG_UINT)AssignedMajorNumber, DEVNAME);
 #endif	/* !defined(SUPPORT_DRI_DRM) */
 
 #if defined(PVR_LDM_MODULE)

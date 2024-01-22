@@ -47,6 +47,88 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) || defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 #include <linux/version.h>
+#include <../drivers/dma-buf/sync_debug.h>
+
+#if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
+#include "pvrsrv_sync_server.h"
+#endif
+
+#if defined(DEBUG_LINUX_MEMORY_ALLOCATIONS)
+#include <linux/list.h>
+#include <linux/workqueue.h>
+
+typedef struct _PVR_QUEUE_SYNC_KERNEL_SYNC_INFO_
+{
+	/* Base services sync info structure */
+	PVRSRV_KERNEL_SYNC_INFO *psBase;
+
+	struct list_head	sHead;
+} PVR_QUEUE_SYNC_KERNEL_SYNC_INFO;
+
+static IMG_BOOL PVRSyncIsSyncInfoInUse(PVRSRV_KERNEL_SYNC_INFO *psSyncInfo)
+{
+	return !(psSyncInfo->psSyncData->ui32WriteOpsPending == psSyncInfo->psSyncData->ui32WriteOpsComplete &&
+			psSyncInfo->psSyncData->ui32ReadOpsPending == psSyncInfo->psSyncData->ui32ReadOpsComplete &&
+			psSyncInfo->psSyncData->ui32ReadOps2Pending == psSyncInfo->psSyncData->ui32ReadOps2Complete);
+}
+
+/* Defer Workqueue for releasing command kernel sync info */
+static struct workqueue_struct *gpsWorkQueue;
+
+/* Linux work struct for workqueue. */
+static struct work_struct gsWork;
+
+/* The "defer-free" sync object list. */
+static LIST_HEAD(gSyncInfoFreeList);
+static DEFINE_SPINLOCK(gSyncInfoFreeListLock);
+
+static void PVRSyncWorkQueueFunction(struct work_struct *data)
+{
+	struct list_head sFreeList, *psEntry, *n;
+	PVR_QUEUE_SYNC_KERNEL_SYNC_INFO *psSyncInfo;
+
+	INIT_LIST_HEAD(&sFreeList);
+	spin_lock(&gSyncInfoFreeListLock);
+	list_for_each_safe(psEntry, n, &gSyncInfoFreeList)
+	{
+		psSyncInfo = container_of(psEntry, PVR_QUEUE_SYNC_KERNEL_SYNC_INFO, sHead);
+
+		if(!PVRSyncIsSyncInfoInUse(psSyncInfo->psBase))
+			list_move_tail(psEntry, &sFreeList);
+    	}
+	spin_unlock(&gSyncInfoFreeListLock);
+
+	list_for_each_safe(psEntry, n, &sFreeList)
+	{
+		psSyncInfo = container_of(psEntry, PVR_QUEUE_SYNC_KERNEL_SYNC_INFO, sHead);
+
+		list_del(psEntry);
+
+		PVRSRVKernelSyncInfoDecRef(psSyncInfo->psBase, IMG_NULL);
+	}
+}
+#endif
+
+#if defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC)
+static struct sync_fence *AllocQueueFence(struct sw_sync_timeline *psTimeline, IMG_UINT32 ui32FenceValue, const char *szName)
+{
+	struct sync_fence *psFence = IMG_NULL;
+	struct sync_pt *psPt;
+
+	psPt = sw_sync_pt_create(psTimeline, ui32FenceValue);
+	if(psPt)
+	{
+		psFence = sync_fence_create(szName, psPt);
+		if(!psFence)
+		{
+			sync_pt_free(psPt);
+		}
+	}
+
+	return psFence;
+}
+#endif /* defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) */
+
 #endif /* defined(PVR_ANDROID_NATIVE_WINDOW_HAS_SYNC) || defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE) */
 
 /*
@@ -837,7 +919,7 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVInsertCommandKM(PVRSRV_QUEUE_INFO	*psQueue,
 #elif defined(PVR_ANDROID_NATIVE_WINDOW_HAS_FENCE)
 	if(phFence != IMG_NULL)
 	{
-		struct fence *psRetireFence, *psCleanupFence;
+		struct dma_fence *psRetireFence, *psCleanupFence;
 
 		SyncSWGetTimelineObj(psQueue->i32TimelineFd, &psCommand->pvTimeline);
 		if(psCommand->pvTimeline == IMG_NULL)

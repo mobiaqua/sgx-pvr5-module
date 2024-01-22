@@ -184,7 +184,6 @@ $(PVRSRV_MODNAME)-y += \
  services4/srvkm/env/linux/pvr_drm.o
 
 ccflags-y += \
- -Iinclude/linux \
  -Iinclude/drm \
  -I$(TOP)/services4/include/env/linux \
 

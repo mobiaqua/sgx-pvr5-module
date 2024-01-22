@@ -14,7 +14,6 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include <linux/thermal.h>
 
 static struct cool_data {

@@ -57,24 +57,29 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/semaphore.h>
 #include <linux/resource.h>
 
-
 #if !defined(LDM_PLATFORM)
 #error "LDM_PLATFORM must be set"
 #endif
 #define	PVR_LINUX_DYNAMIC_SGX_RESOURCE_INFO
 #include <linux/platform_device.h>
 
-#if !defined(PVR_NO_OMAP_TIMER)
-#if (VS_PRODUCT_VERSION == 5) || (VS_PRODUCT_VERSION == 6)
-#define	PVR_OMAP_USE_DM_TIMER_API
-#include <plat/dmtimer.h>
-#endif
+#if ((defined(DEBUG) || defined(TIMING)) && \
+    (LINUX_VERSION_CODE == KERNEL_VERSION(2,6,34))) && \
+    !defined(PVR_NO_OMAP_TIMER)
+/*
+ * We need to explicitly enable the GPTIMER11 clocks, or we'll get an
+ * abort when we try to access the timer registers.
+ */
+#define	PVR_OMAP4_TIMING_PRCM
 #endif
 
 #if !defined(PVR_NO_OMAP_TIMER)
-#if (VS_PRODUCT_VERSION == 5) || (VS_PRODUCT_VERSION == 6)
-#define PVR_OMAP_TIMER_BASE_IN_SYS_SPEC_DATA
+#define	PVR_OMAP_USE_DM_TIMER_API
+#include <plat/dmtimer.h>
 #endif
+
+#if !defined(PVR_NO_OMAP_TIMER)
+#define PVR_OMAP_TIMER_BASE_IN_SYS_SPEC_DATA
 #endif
 #endif /* defined(__linux__) */
 
@@ -87,9 +92,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #if defined(SGX_OCP_REGS_ENABLED)
 /* FIXME: Temporary workaround for OMAP4470 and active power off in 4430 */
 #if !defined(SGX544) && defined(SUPPORT_ACTIVE_POWER_MANAGEMENT)
-#if (VS_PRODUCT_VERSION == 5) || (VS_PRODUCT_VERSION == 6)
 #define SGX_OCP_NO_INT_BYPASS
-#endif
 #endif
 #endif
 #endif
