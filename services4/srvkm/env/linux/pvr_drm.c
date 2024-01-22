@@ -56,10 +56,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <drm/drm_device.h>
 #include <drm/drm.h>
 #include <linux/of_reserved_mem.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0))
 #include <linux/of.h>
 #include <linux/sched/signal.h>
-#endif
 
 #include "img_defs.h"
 #include "services.h"
@@ -119,9 +117,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * as the workqueue won't get scheduled.
  */
 #undef	PVR_DRI_DRM_USE_POST_CLOSE
-#if (defined(SUPPORT_DRI_DRM_EXT) && !defined(PVR_LINUX_USING_WORKQUEUES))
 #define	PVR_DRI_DRM_USE_POST_CLOSE
-#endif
 
 #define PVR_DRM_DRIVER_RENDER	DRIVER_RENDER
 #define PVR_DRM_RENDER_ALLOW	DRM_RENDER_ALLOW

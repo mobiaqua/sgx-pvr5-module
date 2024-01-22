@@ -45,7 +45,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-
 #include <linux/slab.h>
 #include <linux/mm.h>
 #include <linux/list.h>

@@ -41,7 +41,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/version.h>
 
-
 #if !defined(PVR_LINUX_MEM_AREA_POOL_MAX_PAGES)
 #define PVR_LINUX_MEM_AREA_POOL_MAX_PAGES 0
 #endif
@@ -1149,8 +1148,6 @@ FreeVMallocLinuxMemArea(LinuxMemArea *psLinuxMemArea)
     LinuxMemAreaStructFree(psLinuxMemArea);
 }
 
-
-
 IMG_VOID *
 _IORemapWrapper(IMG_CPU_PHYADDR BasePAddr,
                IMG_SIZE_T uBytes,
@@ -1461,8 +1458,8 @@ NewAllocCmaLinuxMemArea(IMG_SIZE_T uBytes, IMG_UINT32 ui32AreaFlags)
     INIT_LIST_HEAD(&psLinuxMemArea->sMMapOffsetStructList);
 
 #if defined(DEBUG_LINUX_MEM_AREAS)
-    dev_err(&gpsPVRLDMDev->dev, "Allocating %d bytes from cma: 0x%llx\n", uBytes,
-            psLinuxMemArea->uData.sCmaRegion.dmaHandle);
+    dev_err(&gpsPVRLDMDev->dev, "Allocating %d bytes from cma: %pad\n", uBytes,
+            &psLinuxMemArea->uData.sCmaRegion.dmaHandle);
 #endif
 
     return psLinuxMemArea;

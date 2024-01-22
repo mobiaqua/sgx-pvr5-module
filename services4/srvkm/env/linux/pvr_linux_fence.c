@@ -177,33 +177,6 @@ static inline bool is_pvr_fence(const struct dma_fence *fence)
 	return fence->ops == &fence_ops;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,19,0))
-static void dma_resv_count_fences(struct dma_resv *resv,
-				  u32 *read_fence_count_out,
-				  u32 *write_fence_count_out)
-{
-	struct dma_resv_iter cursor;
-	u32 write_fence_count = 0;
-	u32 read_fence_count = 0;
-	struct dma_fence *fence;
-
-	dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_READ);
-	dma_resv_for_each_fence_unlocked(&cursor, fence) {
-		if (dma_resv_iter_is_restarted(&cursor)) {
-			read_fence_count = 0;
-			write_fence_count = 0;
-		}
-		if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_READ)
-			read_fence_count++;
-		else if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_WRITE)
-			write_fence_count++;
-	}
-
-	*read_fence_count_out = read_fence_count;
-	*write_fence_count_out = write_fence_count;
-}
-#endif
-
 static struct dma_fence *create_fence_to_signal(struct pvr_fence_frame *pvr_fence_frame)
 {
 	struct pvr_fence *pvr_fence;
@@ -230,7 +203,6 @@ static struct dma_fence *create_fence_to_signal(struct pvr_fence_frame *pvr_fenc
 
 	return pvr_fence_frame->fence_to_signal;
 }
-
 static inline bool is_blocking_fence(const struct dma_fence *fence,
 				const struct pvr_fence_frame *pvr_fence_frame)
 {
@@ -263,7 +235,6 @@ static void signal_and_put_fence(struct pvr_fence_frame *pvr_fence_frame)
 	}
 }
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
 static void blocking_fence_signalled(struct dma_fence *fence, struct dma_fence_cb *cb)
 {
 	struct pvr_blocking_fence *pvr_blocking_fence = container_of(cb, struct pvr_blocking_fence, cb);
@@ -289,7 +260,6 @@ static bool allocate_blocking_fence_storage(struct pvr_fence_frame *pvr_fence_fr
 	}
 	return false;
 }
-#endif
 
 static void free_blocking_fence_storage(struct pvr_fence_frame *pvr_fence_frame)
 {
@@ -300,7 +270,6 @@ static void free_blocking_fence_storage(struct pvr_fence_frame *pvr_fence_frame)
 	}
 }
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
 static int install_and_get_blocking_fence(struct pvr_fence_frame *pvr_fence_frame, unsigned index, struct dma_fence *fence)
 {
 	struct pvr_blocking_fence *pvr_blocking_fence = &pvr_fence_frame->blocking_fences[index];
@@ -332,7 +301,6 @@ static int install_and_get_blocking_fence(struct pvr_fence_frame *pvr_fence_fram
 		return 0;
 	}
 }
-#endif
 
 static void uninstall_and_put_blocking_fence(struct pvr_fence_frame *pvr_fence_frame, unsigned index)
 {
@@ -366,11 +334,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 	unsigned i;
 	int ret;
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0))
-	flist = dma_resv_shared_list(resv);
-#else
 	flist = dma_resv_get_list(resv);
-#endif
 	shared_fence_count = flist ? flist->shared_count : 0;
 
 	fence_to_signal = create_fence_to_signal(pvr_fence_frame);
@@ -387,11 +351,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 
 	if (!shared_fence_count)
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0))
-		struct dma_fence *fence = dma_resv_excl_fence(resv);
-#else
 		struct dma_fence *fence = dma_resv_get_excl(resv);
-#endif
 
 		if (fence && is_blocking_fence(fence, pvr_fence_frame))
 		{
@@ -417,11 +377,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 	for (i = 0, blocking_fence_count = 0; i < shared_fence_count; i++)
 	{
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0))
-		struct dma_fence *fence = rcu_dereference_check(flist->shared[i], dma_resv_held(resv));
-#else
 		struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#endif
 
 		if (is_blocking_fence(fence, pvr_fence_frame))
 		{
@@ -436,11 +392,7 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 		{
 			for (i = 0; i < blocking_fence_count; i++)
 			{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0))
-				struct dma_fence *fence = rcu_dereference_check(flist->shared[i], dma_resv_held(resv));
-#else
 				struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#endif
 
 				if (is_blocking_fence(fence, pvr_fence_frame))
 				{
@@ -462,7 +414,12 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 	return update_reservation_return_value(ret, false);
 #else // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
 	struct dma_fence *fence_to_signal;
+	unsigned blocking_fence_count;
 	int ret;
+
+	struct dma_resv_iter cursor;
+	struct dma_fence *fence;
+
 
 	ret = dma_resv_reserve_fences(resv, 1);
 	if (ret)
@@ -482,8 +439,70 @@ static int update_dma_resv_fences_dst(struct pvr_fence_frame *pvr_fence_frame,
 		return 0;
 	}
 
+	dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+		if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_READ)
+			break;
+
+		if (is_blocking_fence(fence, pvr_fence_frame))
+		{
+			if (allocate_blocking_fence_storage(pvr_fence_frame, 1))
+			{
+				ret = install_and_get_blocking_fence(pvr_fence_frame, 0, fence);
+			}
+			else
+			{
+				dma_fence_put(fence_to_signal);
+				return -ENOMEM;
+			}
+		}
+		else
+		{
+			ret = 1;
+		}
+
+		dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_WRITE);
+		return update_reservation_return_value(ret, true);
+	}
+
+	dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+		if (dma_resv_iter_usage(&cursor) < DMA_RESV_USAGE_READ)
+			continue;
+
+		if (is_blocking_fence(fence, pvr_fence_frame))
+		{
+			blocking_fence_count++;
+		}
+	}
+
+	ret = 1;
+	if (blocking_fence_count)
+	{
+		if (allocate_blocking_fence_storage(pvr_fence_frame, blocking_fence_count))
+		{
+			dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+				if (dma_resv_iter_usage(&cursor) < DMA_RESV_USAGE_READ)
+					continue;
+
+				if (is_blocking_fence(fence, pvr_fence_frame))
+				{
+					if (!install_and_get_blocking_fence(pvr_fence_frame, cursor.index, fence))
+					{
+						ret = 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			dma_fence_put(fence_to_signal);
+			return -ENOMEM;
+		}
+	}
+
+	dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_WRITE);
+
 	return update_reservation_return_value(ret, false);
-#endif // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
+#endif
 }
 
 static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
@@ -517,11 +536,7 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 		return 0;
 	}
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0))
-	flist = dma_resv_shared_list(resv);
-#else
 	flist = dma_resv_get_list(resv);
-#endif
 	shared_fence_count = flist ? flist->shared_count : 0;
 
 	/*
@@ -532,11 +547,7 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 	 */
 	for (i = 0; i < shared_fence_count; i++)
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0))
-		struct dma_fence *fence = rcu_dereference_check(flist->shared[i], dma_resv_held(resv));
-#else
 		struct dma_fence *fence = rcu_dereference_protected(flist->shared[i], dma_resv_held(resv));
-#endif
 
 		if (is_pvr_fence(fence))
 		{
@@ -567,11 +578,7 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 
 	if (!blocking_fence && !shared_fence_count)
 	{
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,14,0))
-		struct dma_fence *fence = dma_resv_excl_fence(resv);
-#else
 		struct dma_fence *fence = dma_resv_get_excl(resv);
-#endif
 
 		if (fence && is_blocking_fence(fence, pvr_fence_frame))
 		{
@@ -601,7 +608,12 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 
 	return update_reservation_return_value(ret, !shared_fence_count);
 #else // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
+	struct dma_resv_iter cursor;
+	struct dma_fence *fence;
 	struct dma_fence *fence_to_signal = NULL;
+	struct dma_fence *blocking_fence = NULL;
+	bool reserve = true;
+	unsigned shared_fence_count;
 	int ret;
 
 	if (!pvr_fence_frame->have_blocking_fences)
@@ -623,8 +635,63 @@ static int update_dma_resv_fences_src(struct pvr_fence_frame *pvr_fence_frame,
 		return 0;
 	}
 
+	shared_fence_count = 0;
+	dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_READ, fence) {
+		if (dma_resv_iter_usage(&cursor) <= DMA_RESV_USAGE_WRITE)
+			continue;
 
-	return update_reservation_return_value(ret, false);
+		shared_fence_count++;
+
+		if (is_pvr_fence(fence))
+		{
+			reserve = false;
+
+			if (is_blocking_fence(fence, pvr_fence_frame))
+			{
+				blocking_fence = fence;
+			}
+			break;
+		}
+	}
+
+	if (reserve)
+	{
+		ret = dma_resv_reserve_fences(resv, 1);
+		if (ret)
+		{
+			return ret;
+		}
+	}
+
+	fence_to_signal = create_fence_to_signal(pvr_fence_frame);
+	if (!fence_to_signal)
+	{
+		return -ENOMEM;
+	}
+
+	ret = 1;
+	if (!blocking_fence && !shared_fence_count)
+	{
+		dma_resv_for_each_fence(&cursor, resv, DMA_RESV_USAGE_WRITE, fence) {
+			if (is_blocking_fence(fence, pvr_fence_frame))
+			{
+				if (allocate_blocking_fence_storage(pvr_fence_frame, 1))
+				{
+					ret = install_and_get_blocking_fence(pvr_fence_frame, 0, fence);
+				}
+				else
+				{
+					dma_fence_put(fence_to_signal);
+					return -ENOMEM;
+				}
+				break;
+			}
+		}
+	}
+
+	dma_resv_add_fence(resv, fence_to_signal, DMA_RESV_USAGE_READ);
+
+	return update_reservation_return_value(ret, !shared_fence_count);
 #endif
 }
 
@@ -942,6 +1009,7 @@ static inline bool sync_enabled(const IMG_BOOL *pbEnabled,
 static inline bool fence_is_blocking(const struct dma_fence *fence,
 			       const PVRSRV_KERNEL_SYNC_INFO *psSyncInfo)
 {
+
 	if (test_bit(DMA_FENCE_FLAG_SIGNALED_BIT, &fence->flags))
 	{
 		return false;
@@ -972,19 +1040,11 @@ retry:
 	shared_count = 0;
 	blocking = false;
 
-#if defined(PVR_BUILD_FOR_RT_LINUX)
-	seq = read_seqbegin(&resv->seq);
-#else
 	seq = read_seqcount_begin(&resv->seq);
-#endif
 	rcu_read_lock();
 
 	flist = rcu_dereference(resv->fence);
-#if defined(PVR_BUILD_FOR_RT_LINUX)
-	if (read_seqretry(&resv->seq, seq))
-#else
 	if (read_seqcount_retry(&resv->seq, seq))
-#endif
 	{
 		goto unlock_retry;
 	}
@@ -1009,11 +1069,7 @@ retry:
 	if (!blocking && !shared_count)
 	{
 		fence = rcu_dereference(resv->fence_excl);
-#if defined(PVR_BUILD_FOR_RT_LINUX)
-		if (read_seqretry(&resv->seq, seq))
-#else
 		if (read_seqcount_retry(&resv->seq, seq))
-#endif
 		{
 			goto unlock_retry;
 		}
@@ -1028,36 +1084,47 @@ retry:
 unlock_retry:
 	rcu_read_unlock();
 	goto retry;
-#else // (LINUX_VERSION_CODE < KERNEL_VERSION(5,19,0))
-	struct dma_fence *fence;
+#else
 	struct dma_resv_iter cursor;
+	struct dma_fence *fence;
 	bool blocking;
-	u32 shared_count;
-	u32 blocking_count;
 
-	dma_resv_count_fences(resv, &shared_count, &blocking_count);
+	blocking = false;
+
+	rcu_read_lock();
 
 	if (is_dst)
 	{
 		dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_READ);
 		dma_resv_for_each_fence_unlocked(&cursor, fence) {
-			blocking = false;
+			if (dma_resv_iter_usage(&cursor) <= DMA_RESV_USAGE_WRITE)
+				continue;
+
 			blocking = fence_is_blocking(fence, psSyncInfo);
 			if (blocking)
-				goto err_iter_end;
+				break;
 		}
+		dma_resv_iter_end(&cursor);
 	}
 
-	if (!blocking && !shared_count)
+	if (!blocking)
 	{
-		dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_WRITE);
+		dma_resv_iter_begin(&cursor, resv, DMA_RESV_USAGE_READ);
 		dma_resv_for_each_fence_unlocked(&cursor, fence) {
-			blocking = fence_is_blocking(fence, psSyncInfo);
+			if (dma_resv_iter_usage(&cursor) == DMA_RESV_USAGE_READ) {
+				break;
+			}
+
+			if (fence_is_blocking(fence, psSyncInfo)) {
+				blocking = true;
+				break;
+			}
 		}
+		dma_resv_iter_end(&cursor);
 	}
 
-err_iter_end:
-	dma_resv_iter_end(&cursor);
+	rcu_read_unlock();
+
 	return blocking;
 #endif
 }
@@ -1640,5 +1707,6 @@ int PVRLinuxFenceInit(void)
 	}
 
 	fence_context = dma_fence_context_alloc(1);
+
 	return 0;
 }

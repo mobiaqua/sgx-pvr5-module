@@ -1,2 +1,2 @@
-# Ignore binaries output directories.
-binary2_omap_linux_*/
+binary_*/
+caches/

@@ -222,6 +222,11 @@ static int __set_freq(void)
 
 		goto noerr;
 
+		ret |= clk_set_rate(sfd.gpu_hyd_clk, sfd.freq);
+
+err3:
+		ret |= clk_set_rate(sfd.gpu_core_clk, sfd.freq);
+err2:
 noerr:
 		return ret;
 	}
@@ -346,6 +351,7 @@ int sgxfreq_init(struct device *dev)
 
 	freq = 0;
 	for (i = 0; i < sfd.freq_cnt; i++) {
+		/* 3.14 and later kernels */
 		opp = dev_pm_opp_find_freq_ceil(dev, &freq);
 		if (IS_ERR_OR_NULL(opp)) {
 			rcu_read_unlock();
@@ -391,8 +397,6 @@ int sgxfreq_init(struct device *dev)
 		pr_err("sgxfreq: failed to get gpu hyd clock: %d\n", ret);
 		return ret;
 	}
-
-
 
 	ret = clk_set_parent(sfd.gpu_hyd_clk, sfd.core_clk);
 	if (ret != 0) {

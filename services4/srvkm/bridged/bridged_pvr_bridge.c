@@ -41,9 +41,16 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */ /**************************************************************************/
 
-
-
-#include <linux/stddef.h>
+#if defined(__linux__)
+#include <linux/version.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0))
+#include <linux/stdarg.h>
+#else
+#include <stdarg.h>
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0) */
+#else
+#include <stdarg.h>
+#endif /* __linux__ */
 
 #include "img_defs.h"
 #include "services.h"
@@ -4973,6 +4980,8 @@ IMG_INT BridgedDispatchKM(PVRSRV_PER_PROCESS_DATA * psPerProc,
 		goto return_fault;
 	}
 
+	PVR_DPF((PVR_DBG_MESSAGE, "ui32BridgeID = %d (%s) being called.", ui32BridgeID, g_BridgeDispatchTable[ui32BridgeID].pszFunctionName));
+
 	if( ui32BridgeID == PVRSRV_GET_BRIDGE_ID(PVRSRV_BRIDGE_UM_KM_COMPAT_CHECK))
 		PVRSRVCompatCheckKM(psBridgeIn, psBridgeOut);
 	else
@@ -5004,6 +5013,10 @@ IMG_INT BridgedDispatchKM(PVRSRV_PER_PROCESS_DATA * psPerProc,
 
 	err = 0;
 return_fault:
+
+	if (err) {
+		PVR_DPF((PVR_DBG_MESSAGE, "ui32BridgeID = %d Failed!", ui32BridgeID));
+	}
 
 	ReleaseHandleBatch(psPerProc);
 	return err;

@@ -45,7 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <asm/page.h>
 #include <asm/set_memory.h>
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,10,0))
-#include <linux/dma-map-ops.h>
+ #include <linux/dma-map-ops.h>
 #endif
 #include <linux/mm.h>
 #include <linux/pagemap.h>
@@ -153,6 +153,7 @@ PVRSRV_ERROR OSAllocMem_Impl(IMG_UINT32 ui32Flags, IMG_SIZE_T uiSize, IMG_PVOID 
     return PVRSRV_OK;
 }
 
+
 #if !defined(DEBUG_LINUX_MEMORY_ALLOCATIONS)
 PVRSRV_ERROR OSFreeMem_Impl(IMG_UINT32 ui32Flags, IMG_SIZE_T uiSize, IMG_PVOID pvCpuVAddr, IMG_HANDLE hBlockAlloc)
 #else
@@ -228,8 +229,7 @@ OSAllocPages_Impl(IMG_UINT32 ui32AllocFlags,
             if (!psLinuxMemArea)
             {
 #if defined(DEBUG_LINUX_MEM_AREAS)
-                dev_err(&gpsPVRLDMDev->dev, "CMA region is either exhausted \
-                        or not present\n");
+                dev_err(&gpsPVRLDMDev->dev, "CMA region is either exhausted or not present\n");
 #endif
                 psLinuxMemArea = NewAllocPagesLinuxMemArea(uiSize, ui32AllocFlags);
             }
@@ -886,8 +886,7 @@ IMG_UINT32 OSGetPageSize(IMG_VOID)
  @Return
 
 ******************************************************************************/
-static irqreturn_t DeviceISRWrapper(int irq, void *dev_id
-        )
+static irqreturn_t DeviceISRWrapper(int irq, void *dev_id)
 {
     PVRSRV_DEVICE_NODE *psDeviceNode = (PVRSRV_DEVICE_NODE*)dev_id;
     SYS_DATA *psSysData = psDeviceNode->psSysData;
@@ -923,15 +922,13 @@ static irqreturn_t DeviceISRWrapper(int irq, void *dev_id
  @Return
 
 ******************************************************************************/
-static irqreturn_t SystemISRWrapper(int irq, void *dev_id
-        )
+static irqreturn_t SystemISRWrapper(int irq, void *dev_id)
 {
     SYS_DATA *psSysData = (SYS_DATA *)dev_id;
     ENV_DATA *psEnvData = (ENV_DATA *)psSysData->pvEnvSpecificData;
     IMG_BOOL bStatus = IMG_FALSE;
 
     PVR_UNREFERENCED_PARAMETER(irq);
-
 
     if (psEnvData->bLISRInstalled)
     {
@@ -975,9 +972,7 @@ PVRSRV_ERROR OSInstallDeviceLISR(IMG_VOID *pvSysData,
 
     PVR_TRACE(("Installing device LISR %s on IRQ %d with cookie %p", pszISRName, ui32Irq, pvDeviceNode));
 
-    if(request_irq(ui32Irq, DeviceISRWrapper,
-        IRQF_SHARED
-        , pszISRName, pvDeviceNode))
+    if(request_irq(ui32Irq, DeviceISRWrapper, IRQF_SHARED, pszISRName, pvDeviceNode))
     {
         PVR_DPF((PVR_DBG_ERROR,"OSInstallDeviceLISR: Couldn't install device LISR on IRQ %d", ui32Irq));
 
@@ -1050,9 +1045,7 @@ PVRSRV_ERROR OSInstallSystemLISR(IMG_VOID *pvSysData, IMG_UINT32 ui32Irq)
 
     PVR_TRACE(("Installing system LISR on IRQ %d with cookie %p", ui32Irq, pvSysData));
 
-    if(request_irq(ui32Irq, SystemISRWrapper,
-        IRQF_SHARED
-        , PVRSRV_MODNAME, pvSysData))
+    if(request_irq(ui32Irq, SystemISRWrapper, IRQF_SHARED, PVRSRV_MODNAME, pvSysData))
     {
         PVR_DPF((PVR_DBG_ERROR,"OSInstallSystemLISR: Couldn't install system LISR on IRQ %d", ui32Irq));
 
@@ -1112,9 +1105,7 @@ PVRSRV_ERROR OSUninstallSystemLISR(IMG_VOID *pvSysData)
  @Return   error status 
 
 ******************************************************************************/
-static void MISRWrapper(
-			struct work_struct *data
-)
+static void MISRWrapper(struct work_struct *data)
 {
 	ENV_DATA *psEnvData = container_of(data, ENV_DATA, sMISRWork);
 	SYS_DATA *psSysData  = (SYS_DATA *)psEnvData->pvMISRData;
@@ -1163,8 +1154,7 @@ PVRSRV_ERROR OSInstallMISR(IMG_VOID *pvSysData)
 		return PVRSRV_ERROR_UNABLE_TO_CREATE_THREAD;
 	}
 
-	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper
-				);
+	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper);
 
 	psEnvData->pvMISRData = pvSysData;
 	psEnvData->bMISRInstalled = IMG_TRUE;
@@ -1244,9 +1234,7 @@ PVRSRV_ERROR OSScheduleMISR(IMG_VOID *pvSysData)
  @Return   error status 
 
 ******************************************************************************/
-static void MISRWrapper(
-			struct work_struct *data
-)
+static void MISRWrapper(struct work_struct *data)
 {
 	ENV_DATA *psEnvData = container_of(data, ENV_DATA, sMISRWork);
 	SYS_DATA *psSysData  = (SYS_DATA *)psEnvData->pvMISRData;
@@ -1280,8 +1268,7 @@ PVRSRV_ERROR OSInstallMISR(IMG_VOID *pvSysData)
 
 	PVR_TRACE(("Installing MISR with cookie %p", pvSysData));
 
-	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper
-				);
+	INIT_WORK(&psEnvData->sMISRWork, MISRWrapper);
 
 	psEnvData->pvMISRData = pvSysData;
 	psEnvData->bMISRInstalled = IMG_TRUE;
@@ -1473,6 +1460,7 @@ IMG_VOID OSPanic(IMG_VOID)
 }
 
 #define	OS_TAS(p)	xchg((p), 1)
+
 /*!
 ******************************************************************************
 
@@ -2540,6 +2528,7 @@ PVRSRV_ERROR OSPCIReleaseDev(PVRSRV_PCI_DEV_HANDLE hPVRPCI)
     {
         pci_clear_master(psPVRPCI->psPCIDev);
     }
+
     pci_disable_device(psPVRPCI->psPCIDev);
 
     OSFreeMem(PVRSRV_OS_PAGEABLE_HEAP, sizeof(*psPVRPCI), (IMG_VOID *)psPVRPCI, IMG_NULL);
@@ -2649,6 +2638,7 @@ PVRSRV_ERROR OSPCIResumeDev(PVRSRV_PCI_DEV_HANDLE hPVRPCI)
             return PVRSRV_ERROR_UNKNOWN_POWER_STATE;
     }
 
+
     pci_restore_state(psPVRPCI->psPCIDev);
 
     err = pci_enable_device(psPVRPCI->psPCIDev);
@@ -2720,7 +2710,7 @@ static void OSTimerCallbackBody(TIMER_CALLBACK_DATA *psTimerCBData)
     mod_timer(&psTimerCBData->sTimer, psTimerCBData->ui32Delay + jiffies);
 }
 
- /*!
+/*!
  ******************************************************************************
 
  @Function      OSTimerCallbackWrapper
@@ -2733,6 +2723,7 @@ static void OSTimerCallbackBody(TIMER_CALLBACK_DATA *psTimerCBData)
 static void OSTimerCallbackWrapper(struct timer_list *psTimer)
 {
 	TIMER_CALLBACK_DATA *psTimerCBData = from_timer(psTimerCBData, psTimer, sTimer);
+
 #if defined(PVR_LINUX_TIMERS_USING_WORKQUEUES) || defined(PVR_LINUX_TIMERS_USING_SHARED_WORKQUEUE)
     int res;
 
@@ -2833,6 +2824,7 @@ IMG_HANDLE OSAddTimer(PFN_TIMER_FUNC pfnTimerFunc, IMG_VOID *pvData, IMG_UINT32 
                                 :	((HZ * ui32MsTimeout) / 1000);
 
     timer_setup(&psTimerCBData->sTimer, OSTimerCallbackWrapper, 0);
+
     return (IMG_HANDLE)(ui + 1);
 }
 
@@ -4362,19 +4354,92 @@ IMG_BOOL OSInvalidateCPUCacheRangeKM(IMG_HANDLE hOSMemHandle,
 
 static void per_cpu_cache_flush(void *arg)
 {
-	PVR_UNREFERENCED_PARAMETER(arg);
-	/*
-		NOTE: Regarding arm64 global flush support on >= Linux v4.2:
-		- Global cache flush support is deprecated from v4.2 onwards
-		- Cache maintenance is done using UM/KM VA maintenance _only_
-		- If you find that more time is spent in VA cache maintenance
-			- Implement arm64 assembly sequence for global flush here
-				- asm volatile ();
-		- If you do not want to implement the global cache assembly
-			- Disable KM cache maintenance support in UM cache.c
-			- Remove this PVR_LOG message
+#if defined(__aarch64__)
+	unsigned long irqflags;
+	signed long Clidr, Csselr, LoC, Assoc, Nway, Nsets, Level, Lsize, Var;
+	static DEFINE_SPINLOCK(spinlock);
+
+	spin_lock_irqsave(&spinlock, irqflags);
+
+	/* Read cache level ID register */
+	asm volatile (
+		"dmb sy\n\t"
+		"mrs %[rc], clidr_el1\n\t"
+		: [rc] "=r" (Clidr));
+
+	/* Exit if there is no cache level of coherency */
+	LoC = (Clidr & (((1UL << 3)-1) << 24)) >> 23;
+	if (! LoC)
+	{
+		goto e0;
+	}
+
+	/* This walks the cache hierarchy until the LLC/LOC cache, at each level skip
+	 * only instruction caches and determine the attributes at this dcache level.
 	*/
-	PVR_LOG(("arm64: Global d-cache flush assembly not implemented"));
+	for (Level = 0; LoC > Level; Level += 2)
+	{
+		/* Mask off this CtypeN bit, skip if not unified cache or separate
+		 * instruction and data caches */
+		Var = (Clidr >> (Level + (Level >> 1))) & ((1UL << 3) - 1);
+		if (Var < 2)
+		{
+			continue;
+		}
+
+		/* Select this dcache level for query */
+		asm volatile (
+			"msr csselr_el1, %[val]\n\t"
+			"isb\n\t"
+			"mrs %[rc], ccsidr_el1\n\t"
+			: [rc] "=r" (Csselr) : [val] "r" (Level));
+
+		/* Look-up this dcache organisation attributes */
+		Nsets = (Csselr >> 13) & ((1UL << 15) - 1);
+		Assoc = (Csselr >> 3) & ((1UL << 10) - 1);
+		Lsize = (Csselr & ((1UL << 3) - 1)) + 4;
+		Nway = 0;
+
+		/* For performance, do these in assembly; foreach dcache level/set,
+		 * foreach dcache set/way, construct the "DC CISW" instruction
+		 * argument and issue instruction */
+		asm volatile (
+			"mov x6, %[val0]\n\t"
+			"mov x9, %[rc1]\n\t"
+			"clz w9, w6\n\t"
+			"mov %[rc1], x9\n\t"
+			"lsetloop:\n\t"
+			"mov %[rc5], %[val0]\n\t"
+			"swayloop:\n\t"
+			"lsl x6, %[rc5], %[rc1]\n\t"
+			"orr x9, %[val2], x6\n\t"
+			"lsl x6, %[rc3], %[val4]\n\t"
+			"orr x9, x9, x6\n\t"
+			"dc     cisw, x9\n\t"
+			"subs %[rc5], %[rc5], #1\n\t"
+			"b.ge swayloop\n\t"
+			"subs %[rc3], %[rc3], #1\n\t"
+			"b.ge lsetloop\n\t"
+			: [rc1] "+r" (Nway), [rc3] "+r" (Nsets), [rc5] "+r" (Var)
+			: [val0] "r" (Assoc), [val2] "r" (Level), [val4] "r" (Lsize)
+			: "x6", "x9", "cc");
+	}
+
+e0:
+	/* Re-select L0 d-cache as active level, issue barrier before exit */
+	Var = 0;
+	asm volatile (
+		"msr csselr_el1, %[val]\n\t"
+		"dsb sy\n\t"
+		"isb\n\t"
+		: : [val] "r" (Var));
+
+	spin_unlock_irqrestore(&spinlock, irqflags);
+
+#else
+	flush_cache_all();
+#endif
+	PVR_UNREFERENCED_PARAMETER(arg);
 }
 
 IMG_VOID OSCleanCPUCacheKM(IMG_VOID)
@@ -4697,16 +4762,6 @@ PVRSRV_ERROR PVROSFuncInit(IMG_VOID)
     }
 #endif
 
-#if defined(SUPPORT_ION) && !defined(LMA)
-	{
-		PVRSRV_ERROR eError;
-		eError = IonInit();
-		if (eError != PVRSRV_OK)
-		{
-			PVR_DPF((PVR_DBG_ERROR, "%s: IonInit failed", __FUNCTION__));
-		}
-	}
-#endif
     return PVRSRV_OK;
 }
 

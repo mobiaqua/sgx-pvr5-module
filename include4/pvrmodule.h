@@ -44,9 +44,5 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 MODULE_AUTHOR("Imagination Technologies Ltd. <gpl-support@imgtec.com>");
 MODULE_LICENSE("Dual MIT/GPL");
-#if LINUX_VERSION_CODE > KERNEL_VERSION(5,15,0)
-#include <linux/module.h>
-MODULE_IMPORT_NS(DMA_BUF);
-#endif
 
 #endif	/* _PVRMODULE_H_ */
