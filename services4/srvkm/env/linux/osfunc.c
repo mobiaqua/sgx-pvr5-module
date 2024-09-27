@@ -56,6 +56,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <linux/pci.h>
 #include <linux/platform_device.h>
 
+#include <linux/ktime.h>
 #include <linux/string.h>
 #include <linux/sched.h>
 #include <linux/interrupt.h>
@@ -849,9 +850,9 @@ IMG_UINT32 OSGetCurrentProcessIDKM(IMG_VOID)
 *****************************************************************************/
 IMG_UINT32 OSGetCurrentTimeInUSecsKM(IMG_VOID)
 {
-	struct timeval          tv;
-	do_gettimeofday(&tv);
-	return (tv.tv_sec * 1000000 + tv.tv_usec);
+	ktime_t time;
+	time = ktime_get();
+	return (ktime_to_us(time));
 }
 #endif
 
@@ -3649,13 +3650,12 @@ PVRSRV_ERROR OSAcquirePhysPageAddr(IMG_VOID *pvCPUVAddr,
 
     /* Get page list */
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0))
-    psInfo->iNumPagesMapped = get_user_pages(
-		uStartAddr, psInfo->iNumPages, 1, psInfo->ppsPages, NULL);
+    psInfo->iNumPagesMapped = get_user_pages(uStartAddr,
+		psInfo->iNumPages, 1, psInfo->ppsPages, NULL);
 #else
-    psInfo->iNumPagesMapped = get_user_pages(
-		uStartAddr, psInfo->iNumPages, 1, psInfo->ppsPages);
+    psInfo->iNumPagesMapped = get_user_pages(uStartAddr,
+		psInfo->iNumPages, 1, psInfo->ppsPages);
 #endif
-
     if (psInfo->iNumPagesMapped >= 0)
     {
         /* See if we got all the pages we wanted */
