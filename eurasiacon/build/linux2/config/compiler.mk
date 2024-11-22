@@ -68,6 +68,9 @@ define calculate-compiler-preferred-target
   ifneq ($$(filter aarch64-%,$$($(1)_compiler_preferred_target)),)
    $(1)_compiler_preferred_target := aarch64-linux-gnu
   endif
+  ifneq ($$(filter arm64-apple-%,$$($(1)_compiler_preferred_target)),)
+   $(1)_compiler_preferred_target := aarch64-linux-gnu
+  endif
   ifneq ($$(filter arm-%-gnueabihf arm-oe-linux-gnueabi arm-poky-linux-gnueabi arm-yoe-linux-gnueabi arm-oe-linux-musleabi arm-poky-linux-musleabi arm-yoe-linux-musleabi,$$($(1)_compiler_preferred_target)),)
    $(1)_compiler_preferred_target := arm-linux-gnueabihf
   endif
