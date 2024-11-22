@@ -1435,10 +1435,6 @@ NewAllocCmaLinuxMemArea(IMG_SIZE_T uBytes, IMG_UINT32 ui32AreaFlags)
     dma_addr_t phys;
     void *cookie;
 
-    /* return if there is no device specific cma pool */
-    if (!bCmaAllocation)
-        return NULL;
-
     psLinuxMemArea = LinuxMemAreaStructAlloc();
     if (!psLinuxMemArea)
     {
@@ -1458,8 +1454,10 @@ NewAllocCmaLinuxMemArea(IMG_SIZE_T uBytes, IMG_UINT32 ui32AreaFlags)
     INIT_LIST_HEAD(&psLinuxMemArea->sMMapOffsetStructList);
 
 #if defined(DEBUG_LINUX_MEM_AREAS)
-    dev_err(&gpsPVRLDMDev->dev, "Allocating %d bytes from cma: %pad\n", uBytes,
-            &psLinuxMemArea->uData.sCmaRegion.dmaHandle);
+    PVR_DPF((PVR_DBG_VERBOSE, "%s: Allocating %d bytes from cma: %pad\n",
+                            __FUNCTION__, uBytes,
+                            &psLinuxMemArea->uData.sCmaRegion.dmaHandle));
+    DebugLinuxMemAreaRecordAdd(psLinuxMemArea, ui32AreaFlags);
 #endif
 
     return psLinuxMemArea;
@@ -1524,15 +1522,16 @@ FreeAllocCmaLinuxMemArea(LinuxMemArea *psLinuxMemArea)
     PVR_ASSERT(psLinuxMemArea);
     PVR_ASSERT(psLinuxMemArea->eAreaType == LINUX_MEM_AREA_CMA);
 
+#if defined(DEBUG_LINUX_MEM_AREAS)
+    PVR_DPF((PVR_DBG_VERBOSE, "%s: Freeing %d bytes from CMA region",
+                            __FUNCTION__, psLinuxMemArea->uiByteSize));
+    DebugLinuxMemAreaRecordRemove(psLinuxMemArea);
+#endif
+
     dma_free_attrs(&gpsPVRLDMDev->dev, psLinuxMemArea->uiByteSize,
             psLinuxMemArea->uData.sCmaRegion.hCookie,
             psLinuxMemArea->uData.sCmaRegion.dmaHandle,
             DMA_ATTR_NO_KERNEL_MAPPING);
-
-#if defined(DEBUG_LINUX_MEM_AREAS)
-    dev_err(&gpsPVRLDMDev->dev, "Freed %d bytes from CMA region\n",
-            psLinuxMemArea->uiByteSize);
-#endif
 
     LinuxMemAreaStructFree(psLinuxMemArea);
 }
@@ -2751,4 +2750,9 @@ IMG_VOID LinuxSetCMARegion(IMG_BOOL bCma)
     {
         PVR_TRACE(("%s:, CMA pool is setup for GPU\n", __FUNCTION__));
     }
+}
+
+IMG_BOOL LinuxGetCMARegion(IMG_VOID)
+{
+    return bCmaAllocation;
 }
