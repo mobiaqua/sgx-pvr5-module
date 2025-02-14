@@ -476,7 +476,11 @@ static int pvr_max_ioctl = DRM_ARRAY_SIZE(sPVRDrmIoctls);
 #if defined(PVR_DRI_DRM_PLATFORM_DEV) && !defined(SUPPORT_DRI_DRM_EXT) && \
 	!defined(SUPPORT_DRI_DRM_PLUGIN)
 static int PVRSRVDrmProbe(struct platform_device *pDevice);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 static int PVRSRVDrmRemove(struct platform_device *pDevice);
+#else
+static void PVRSRVDrmRemove(struct platform_device *pDevice);
+#endif
 #endif	/* defined(PVR_DRI_DRM_PLATFORM_DEV) && !defined(SUPPORT_DRI_DRM_EXT) */
 
 #if defined(SUPPORT_DRI_DRM_PLUGIN)
@@ -528,6 +532,9 @@ static const struct file_operations sPVRFileOps =
 #endif
 	.mmap = PVRMMap,
 	.poll = drm_poll,
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,12,0))
+	.fop_flags = FOP_UNSIGNED_OFFSET,
+#endif
 };
 
 static struct drm_driver sPVRDrmDriver = 
@@ -642,7 +649,11 @@ PVRSRVDrmProbe(struct platform_device *pDevice)
 #endif
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 static int
+#else
+static void
+#endif
 PVRSRVDrmRemove(struct platform_device *pDevice)
 {
 	struct drm_device *drm_dev = platform_get_drvdata(pDevice);
@@ -652,7 +663,9 @@ PVRSRVDrmRemove(struct platform_device *pDevice)
 	drm_dev_unregister(drm_dev);
 	drm_dev_put(drm_dev);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 	return 0;
+#endif
 }
 #endif
 

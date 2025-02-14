@@ -3359,6 +3359,7 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
     *pui32PFN = 0;
     *ppsPage = NULL;
 
+    /* Walk the page tables to find the PTE */
     psPGD = pgd_offset(psMM, uCPUVAddr);
     if (pgd_none(*psPGD) || pgd_bad(*psPGD))
         return bRet;
@@ -3377,11 +3378,15 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
 
     psPTE = (pte_t *)pte_offset_map_lock(psMM, psPMD, uCPUVAddr, &psPTLock);
 
+    /* Check if the returned PTE is actually valid and writable */
     if ((pte_none(*psPTE) == 0) && (pte_present(*psPTE) != 0) && (pte_write(*psPTE) != 0))
     {
         *pui32PFN = pte_pfn(*psPTE);
-	bRet = IMG_TRUE;
+        bRet = IMG_TRUE;
 
+        /* In case the pfn is valid, meaning it is a RAM page and not
+         * IO-remapped, we can get the actual page struct from it.
+         */
         if (pfn_valid(*pui32PFN))
         {
             *ppsPage = pfn_to_page(*pui32PFN);
@@ -3393,7 +3398,8 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
     pte_unmap_unlock(psPTE, psPTLock);
 
     return bRet;
-#else	/* #if (LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)) */
+#else /* #if (LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)) */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0)
 	spinlock_t *ptl;
 	pte_t *ptep;
 	int ret;
@@ -3414,7 +3420,31 @@ static IMG_BOOL CPUVAddrToPFN(struct vm_area_struct *psVMArea, IMG_UINTPTR_T uCP
 	pte_unmap_unlock(ptep, ptl);
 
 	return IMG_TRUE;
-#endif
+#else /* #if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0) */
+	struct follow_pfnmap_args args = { .vma = psVMArea, .address = uCPUVAddr };
+
+	IMG_BOOL bRet = IMG_FALSE;
+
+	*pui32PFN = 0;
+	*ppsPage = NULL;
+
+	/* Walk the page tables to find the PTE */
+	if(follow_pfnmap_start(&args) != 0)
+		return IMG_FALSE;
+
+	*pui32PFN = args.pfn;
+	if (pfn_valid(*pui32PFN))
+	{
+		*ppsPage = pfn_to_page(*pui32PFN);
+
+		get_page(*ppsPage); /* increase the reference count on page */
+	}
+	bRet = IMG_TRUE;
+	follow_pfnmap_end(&args);
+
+	return bRet;
+#endif /* #if LINUX_VERSION_CODE < KERNEL_VERSION(6,12,0) */
+#endif /* #if (LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)) */
 }
 
 /*!
